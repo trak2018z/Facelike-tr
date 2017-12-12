@@ -48,7 +48,7 @@
 						<?php
 					}
 					else {
-						$superUser = checkadmin($path, $dbName, getidfromsession(), $userData);
+						$superUser = checkadmin($path, $userSecurityDbName, getidfromsession(), $userData);
 						if($superUser) {
 							//Widok dla zalogowanego administratora
 							?>

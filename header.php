@@ -16,14 +16,15 @@
 				$signed = checksession(true);
 				
 				if($signed) {
-					$signed = checksessionrefresh($path, $dbName, getidfromsession());
+					$signed = checksessionrefresh($path, $userSecurityDbName, getidfromsession());
 				}
 				
 				if($signed) {
 					//Pobierz dane o użytkowniku i zapisz je do zmiennej $userData
-					$userData = data($path, $userDbName);
+					$userData = data($path, $userDataDbName);
+					//echo "userData=".json_decode($userData, true)."<br />";	//test
 					
-					if(checkadmin($path, $dbName, getidfromsession(), $userData)) {
+					if(checkadmin($path, $userSecurityDbName, getidfromsession(), $userData)) {
 						//Widok dla zalogowanego administratora
 						?>
 						<li class="nav-item dropdown">
@@ -79,7 +80,6 @@
 				<?php
 				if($signed) {
 					//Widok dla zalogowanego użytkownika
-					echo '<li class="nav-item"><div class="navbar-nav-welcome">Witaj</div></li>';
 					echo '<li class="nav-item"><a href="index.php?id=profil" class="nav-link">'.$userData['imie'].' '.$userData['nazwisko'].'</a></li>';
 					echo '<li class="nav-item"><a href="index.php?id=wylogowanie" class="nav-link">Wyloguj się</a></li>';
 				}

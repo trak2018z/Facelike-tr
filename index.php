@@ -82,41 +82,34 @@ header('Content-Type: text/html;charset=UTF-8');
 			if(isset($_GET['id'])) {
 				$pageId = $_GET['id'];
 			}
-			//echo "pageId=".$pageId."<br>";	//test
+			//echo "pageId=".$pageId."<br />";	//test
 			
 			//Pobranie id formularza
 			$postId = null;
 			if(isset($_REQUEST['id'])) {
 				$postId = $_REQUEST['id'];
 			}
-			//echo "postId=".$postId."<br>";	//test
+			//echo "postId=".$postId."<br />";	//test
+			echo "<br /><br />";	//test
 			
 			switch($postId)
 			{
 				case "rejestracja":
-					postRegister($path, $dbName, $userDbName);
+					postRegister($path, $userSecurityDbName, $userDataDbName);
 					break;
 				case "logowanie":
-					postLogin($path, $dbName);
+					postLogin($path, $userSecurityDbName);
+					break;
+				case "odzyskajkonto":
+					postRecoverAccount($path, $userSecurityDbName, $userDataDbName);
+					break;
+				case "zmianahasla":
+					postChangePassword($path, $userSecurityDbName, $userDataDbName);
 					break;
 				case "zmienprofil":
-					postEditProfile($path, $dbName, $userDbName, $userData);
+					postEditProfile($path, $userSecurityDbName, $userDataDbName, $userData);
 					break;
-				case "dodajsale":
-					postAddRoom($path, $roomDbName);
-					break;
-				case "zmiensale":
-					postEditRoom($path, $roomDbName);
-					break;
-				case "usunsale":
-					postDeleteRoom($path, $roomDbName);
-					break;
-				case "dodajrezerwacje":
-					postAddReservation($path, $dbName, $userData, $roomDbName, $reservationDbName, $serviceDbName);
-					break;
-				case "anulujrezerwacje":
-					postCancelReservation($path, $reservationDbName);
-					break;
+				
 				case "wyslijwiadomoscsms":
 					postSendTextMessage();
 					break;
@@ -125,12 +118,6 @@ header('Content-Type: text/html;charset=UTF-8');
 					break;
 				case "zmienustawieniaadministratora":
 					postEditAdminSettings($path);
-					break;
-				case "odzyskajkonto":
-					postRecoverAccount($path, $dbName, $userDbName);
-					break;
-				case "zmianahasla":
-					postChangePassword($path, $dbName, $userDbName);
 					break;
 			}
 			
@@ -185,10 +172,10 @@ header('Content-Type: text/html;charset=UTF-8');
 					include("account/adminpanel.php");
 					break;
 				case "informacjesystemowe":
-					include("account/adminpanel.php");
+					include("account/systeminfo.php");
 					break;
 				case "testbramkisms":
-					include("account/adminpanel.php");
+					include("account/smsgatewaytest.php");
 					break;
 				case "zaawansowanaedycjabazydanych":
 					include("account/adminpanel.php");
