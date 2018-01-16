@@ -16,6 +16,24 @@ html {
   padding-left: 15px;
 }
 
+/* [ tabulacje ] */
+tab1 { padding-left: 4em; }
+tab2 { padding-left: 8em; }
+tab3 { padding-left: 12em; }
+tab4 { padding-left: 16em; }
+tab5 { padding-left: 20em; }
+tab6 { padding-left: 24em; }
+tab7 { padding-left: 28em; }
+tab8 { padding-left: 32em; }
+tab9 { padding-left: 36em; }
+tab10 { padding-left: 40em; }
+tab11 { padding-left: 44em; }
+tab12 { padding-left: 48em; }
+tab13 { padding-left: 52em; }
+tab14 { padding-left: 56em; }
+tab15 { padding-left: 60em; }
+tab16 { padding-left: 64em; }
+
 /* [ kolumny ] */
 .col-lef {
 	float: left;
@@ -76,7 +94,7 @@ html {
 }
 .stopka {
 	height: 30px;
-	background: url(dane/stopka.jpg);
+	background: url(images/stopka.jpg);
 	border: 1px solid #D87136;
 	padding: 5px;
 }
@@ -113,7 +131,7 @@ html {
 	font-weight: bold;
 	text-align: center;
 	height: 30px;
-	background: url(dane/title.jpg);	
+	background: url(images/title.jpg);	
 }
 
 /* [ cookies ] */
@@ -200,6 +218,13 @@ input.i01_date {
 input.i02 {
 	width: 180px;
 }
+.loginLoading {
+	width: 100%;
+	position: absolute;
+	top: 140px;
+	left: 0px;
+	z-index: 100;
+}
 
 /* [ odzyskanie konta ] */
 input.i03 {
@@ -208,6 +233,186 @@ input.i03 {
 /*********************************************************************
 #======[ opcje panelu administracyjnego ]============================#
 *********************************************************************/
+
+/* [ lista kont na Facebook-u ] */
+table#account-list-body {
+	width: 98%;
+	margin: 0px 10px 0px 10px;
+}
+#account-list-body td {
+	text-align: center;
+	vertical-align: middle;
+}
+#account-number td {
+	padding: 5px 5px 5px 5px;
+	text-align: center;
+	vertical-align: middle;
+}
+table#account-drop-down-list {
+	width: 100%;
+}
+#account-drop-down-list td {
+	padding: 0px 20px 0px 0px;
+	text-align: right;
+	vertical-align: middle;
+}
+table#account-list {
+	width: 98%;
+	margin: 0px 10px 0px 10px;
+}
+#account-list th {
+	padding: 5px 10px 5px 10px;
+	text-align: left;
+	vertical-align: middle;
+}
+#account-list td {
+	padding: 5px 10px 5px 10px;
+	text-align: left;
+	vertical-align: middle;
+}
+table#account-list caption {
+	font-size: 20px;
+	font-weight: bold;
+	color: white;
+	background-color: #6cd900;
+	padding: 5px 0px 0px 0px;
+	text-align: center;
+	vertical-align: middle;
+}
+table#account-list th {
+	font-size: 16px;
+	font-weight: bold;
+	color: white;
+	background-color: #6cd900;
+}
+table#account-list tr:nth-child(even) {
+	background-color: #4ca6ff;
+}
+table#account-list tr:nth-child(odd) {
+	background-color: #99ccff;
+}
+table#account-empty-list {
+	width: 98%;
+	margin: 0px 10px 0px 10px;
+}
+#account-empty-list td {
+	font-size: 19px;
+	font-weight: bold;
+	color: black;
+	background-color: #ff4000;
+	padding: 200px 10px 200px 10px;
+	text-align: center;
+	vertical-align: middle;
+}
+
+/* [ kont na Facebook-u - zdjêcie ] */
+div.account-picture {
+	width: 100%;
+}
+
+/* [ generator kont na Facebook-u ] */
+.register_account_loading {
+	width: 100%;
+	position: absolute;
+	top: 140px;
+	left: 0px;
+	z-index: 100;
+}
+
+/* [ lista zdjêæ na Facebook-u ] */
+table#photo-list-body {
+	width: 98%;
+	margin: 0px 10px 0px 10px;
+}
+#photo-list-body td {
+	text-align: center;
+	vertical-align: middle;
+}
+#photo-number td {
+	padding: 5px 5px 5px 5px;
+	text-align: center;
+	vertical-align: middle;
+}
+table#photo-drop-down-list {
+	width: 100%;
+}
+#photo-drop-down-list td {
+	padding: 0px 20px 0px 0px;
+	text-align: right;
+	vertical-align: middle;
+}
+table#photo-list {
+	width: 98%;
+	margin: 0px 10px 0px 10px;
+}
+#photo-list th {
+	padding: 5px 10px 5px 10px;
+	text-align: left;
+	vertical-align: middle;
+}
+#photo-list td {
+	padding: 5px 10px 5px 10px;
+	text-align: left;
+	vertical-align: middle;
+}
+table#photo-list caption {
+	font-size: 20px;
+	font-weight: bold;
+	color: white;
+	background-color: #6cd900;
+	padding: 5px 0px 0px 0px;
+	text-align: center;
+	vertical-align: middle;
+}
+table#photo-list th {
+	font-size: 16px;
+	font-weight: bold;
+	color: white;
+	background-color: #6cd900;
+}
+table#photo-list tr:nth-child(even) {
+	background-color: #4ca6ff;
+}
+table#photo-list tr:nth-child(odd) {
+	background-color: #99ccff;
+}
+table#photo-empty-list {
+	width: 98%;
+	margin: 0px 10px 0px 10px;
+}
+#photo-empty-list td {
+	font-size: 19px;
+	font-weight: bold;
+	color: black;
+	background-color: #ff4000;
+	padding: 200px 10px 200px 10px;
+	text-align: center;
+	vertical-align: middle;
+}
+
+/* [ dodawanie zdjêæ na Facebook-u ] */
+.form-add_photo_field {
+	border: 1px solid #abadb3;
+	color: #000000;
+	-webkit-box-shadow: rgba(255,255,255,0.4) 0 1px 0, inset rgba(000,000,000,0.7) 0 0px 0px;
+	-moz-box-shadow: rgba(255,255,255,0.4) 0 1px 0, inset rgba(000,000,000,0.7) 0 0px 0px;
+	box-shadow: rgba(255,255,255,0.4) 0 1px 0, inset rgba(000,000,000,0.7) 0 0px 0px;
+	padding: 2px;
+	width: 280px;
+}
+.add_photo_loading {
+	width: 100%;
+	position: absolute;
+	top: 140px;
+	left: 0px;
+	z-index: 100;
+}
+
+/* [ mapa google ] */
+div.map {
+	width: 100%;
+	height: 600px;
+}
 
 /* [ test bramki sms ] */
 div#znaki-wiadomosc {
@@ -417,7 +622,84 @@ td.status {
 	color: #fff;
 }
 
+/* [ lista u¿ytkowników ] */
+table#user-list-body {
+	width: 98%;
+	margin: 0px 10px 0px 10px;
+}
+#user-list-body td {
+	text-align: center;
+	vertical-align: middle;
+}
+#user-number td {
+	padding: 5px 5px 5px 5px;
+	text-align: center;
+	vertical-align: middle;
+}
+table#user-drop-down-list {
+	width: 100%;
+}
+#user-drop-down-list td {
+	padding: 0px 20px 0px 0px;
+	text-align: right;
+	vertical-align: middle;
+}
+table#user-list {
+	width: 98%;
+	margin: 0px 10px 0px 10px;
+}
+#user-list th {
+	padding: 5px 10px 5px 10px;
+	text-align: left;
+	vertical-align: middle;
+}
+#user-list td {
+	padding: 5px 10px 5px 10px;
+	text-align: left;
+	vertical-align: middle;
+}
+table#user-list caption {
+	font-size: 20px;
+	font-weight: bold;
+	color: white;
+	background-color: #6cd900;
+	padding: 5px 0px 0px 0px;
+	text-align: center;
+	vertical-align: middle;
+}
+table#user-list th {
+	font-size: 16px;
+	font-weight: bold;
+	color: white;
+	background-color: #6cd900;
+}
+table#user-list tr:nth-child(even) {
+	background-color: #4ca6ff;
+}
+table#user-list tr:nth-child(odd) {
+	background-color: #99ccff;
+}
+table#user-empty-list {
+	width: 98%;
+	margin: 0px 10px 0px 10px;
+}
+#user-empty-list td {
+	font-size: 19px;
+	font-weight: bold;
+	color: black;
+	background-color: #ff4000;
+	padding: 200px 10px 200px 10px;
+	text-align: center;
+	vertical-align: middle;
+}
+
 /* [ profil u¿ytkownika ] */
+#profil-info {
+	color: black;
+}
+#profil-tab {
+	padding: 0px 0px 0px 40px;
+}
 table#t07 {
 	width: 98%;
 	margin: 0px 10px 0px 10px;
@@ -559,6 +841,50 @@ table#t10 td:nth-child(even) {
 	background-image: -ms-linear-gradient(top, #3e779d 0%, #65a9d7 100%);
 	color: #fff;
 }
+
+/* [ konta u¿ytkowników ] */
+.form-add_account_field {
+	border: 1px solid #abadb3;
+	color: #000000;
+	-webkit-box-shadow: rgba(255,255,255,0.4) 0 1px 0, inset rgba(000,000,000,0.7) 0 0px 0px;
+	-moz-box-shadow: rgba(255,255,255,0.4) 0 1px 0, inset rgba(000,000,000,0.7) 0 0px 0px;
+	box-shadow: rgba(255,255,255,0.4) 0 1px 0, inset rgba(000,000,000,0.7) 0 0px 0px;
+	padding: 2px;
+	width: 280px;
+}
+
+/* [ styl ogólnego u¿ycia ] */
+.form-required {
+	color: #FF0000;
+}
+/*********************************************************************
+#======[ opcje information boxes ]===================================#
+*********************************************************************/
+
+.information {
+	margin-bottom: 0mm;
+	margin-top: 0mm;
+	margin-left: 0mm;
+	margin-right: 1mm;
+}
+.information-success {
+    border: 1px solid #060;
+    width: 500px;
+    margin: 5px;
+	padding: 2px;
+    color: black;
+	background: #CF9;
+    font-weight: bold;
+}
+.information-error {
+    border: 1px solid #c00;
+    width: 500px;
+    margin: 5px;
+	padding: 2px;
+    color: black;
+	background: #f88;
+    font-weight: bold;
+}
 /*********************************************************************
 #======[ opcje message boxes ]=======================================#
 *********************************************************************/
@@ -579,38 +905,40 @@ table#t10 td:nth-child(even) {
 }
 .info-box {
 	color: #00529B;
-	background:#BDE5F8 url(../data/icons/png/info.png) top left no-repeat;
+	background:#BDE5F8 url(../images/icons/png/info.png) top left no-repeat;
 	background-position: 10px 10px;
 }
 .success-box {
 	color: #4F8A10;
-	background:#DFF2BF url(../data/icons/png/success.png) top left no-repeat;
+	background:#DFF2BF url(../images/icons/png/success.png) top left no-repeat;
 	background-position: 10px 10px;
 }
 .warning-box {
 	color: #9F6000;
-	background:#FEEFB3 url(../data/icons/png/warning.png) top left no-repeat;
+	background:#FEEFB3 url(../images/icons/png/warning.png) top left no-repeat;
 	background-position: 10px 10px;
 }
 .error-box {
 	color: #D8000C;
-	background:#FFBABA url(../data/icons/png/error.png) top left no-repeat;
+	background:#FFBABA url(../images/icons/png/error.png) top left no-repeat;
 	background-position: 10px 10px;
 }
 .validation_success-box {
     color: #4F8A10;
-    background: #DFF2BF url(../data/icons/png/success.png) top left no-repeat;
+    background: #DFF2BF url(../images/icons/png/success.png) top left no-repeat;
 	background-position: 10px 50%;
 }
 .validation_warning-box {
     color: #6B3700;
-    background: #FFCC99 url(../data/icons/png/warning.png) top left no-repeat;
+    background: #FFCC99 url(../images/icons/png/warning.png) top left no-repeat;
 	background-position: 10px 50%;
 }
 .validation_error-box {
     color: #D63301;
-    background: #FFCCBA url(../data/icons/png/error.png) top left no-repeat;
+    background: #FFCCBA url(../images/icons/png/error.png) top left no-repeat;
 	background-position: 10px 50%;
+}
+.error-show {
 }
 /*********************************************************************
 #======[ opcje mail boxes ]==========================================#

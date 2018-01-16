@@ -10,7 +10,7 @@ header('Content-Type: text/html;charset=UTF-8');
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>Facelike</title>
 	<link href="styles/style.css" rel="stylesheet" type="text/css" />
-	<!----><link href="styles/bootstrap.css" rel="stylesheet" type="text/css" />
+	<link href="styles/bootstrap.css" rel="stylesheet" type="text/css" />
 	<link href="styles/camera.css" rel="stylesheet" type="text/css" id="camera-css" media="all" /> 
 	<link href="styles/sweetalert.css" rel="stylesheet" type="text/css" />
 	<link href="favicon_64.ico" rel="shortcut icon" type="image/x-icon" />
@@ -26,14 +26,8 @@ header('Content-Type: text/html;charset=UTF-8');
 	<script src="alert/dist/sweetalert.min.js" type="text/javascript"></script>
 	<script src="scripts/modernizr-2.6.2.js" type="text/javascript"></script>
 </head>
-<body>
+<body onload="initialiseMap(); initialise()">
     <form method="post" action="./" id="ctl01">
-		<!--<div class="aspNetHidden">
-			<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
-			<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
-			<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="wVwkWWw9cSYxwvro3jvzCVgOD2+MEulv+E1nXpvMJbs22sjTMXxbD/MPQX6UYBNFTEtAhFQGIJnSHRWUYS6yUjBZMYei19JjQEau9S5UAICqq/C9VccX3o+ARwHmT3weQUWUSO4wJ9//bHi8cktQ2kEKK7WXXciM3tSZ7HbQEt5vngVf1uPERFChJYJaUNEFBfCd7tigbuwHpuQ+o5I4Hg==" />
-		</div>-->
-		
 		<script type="text/javascript">
 		//<![CDATA[
 			var theForm = document.forms['ctl01'];
@@ -49,16 +43,12 @@ header('Content-Type: text/html;charset=UTF-8');
 			}
 		 //]]>
 		</script>
-		<!--<script type="text/javascript">
-		//<![CDATA[
-		 if (typeof(Sys) === 'undefined')
-		  throw new Error('Ładowanie struktury strony klienta ASP.NET Ajax nie powiodło się.');
-		 //]]>
-		</script>-->
 		<script src="scripts/popper.min.js" type="text/javascript"></script>
 		<script src="scripts/bootstrap.js" type="text/javascript"></script>
 		<!--<script src="scripts/respond.js" type="text/javascript"></script>
 		<script src="/bundles/WebFormsJs?v=AAyiAYwMfvmwjNSBfIMrBAqfU5exDukMVhrRuZ-PDU01" type="text/javascript"></script>-->
+		<script src="scripts/geoPosition.js" type="text/javascript" charset="utf-8"></script>
+		<script src="scripts/geoPositionSimulator.js" type="text/javascript" charset="utf-8"></script>
 		<script type="text/javascript">
 		//<![CDATA[
 			Sys.WebForms.PageRequestManager._initialize('ctl00$ctl09', 'ctl01', [], [], [], 90, 'ctl00');
@@ -90,24 +80,32 @@ header('Content-Type: text/html;charset=UTF-8');
 				$postId = $_REQUEST['id'];
 			}
 			//echo "postId=".$postId."<br />";	//test
-			echo "<br /><br />";	//test
 			
 			switch($postId)
 			{
 				case "rejestracja":
-					postRegister($path, $userSecurityDbName, $userDataDbName);
+					postRegister($path, $userSecurityDbName, $userStatisticsDbName, $userDataDbName);
 					break;
 				case "logowanie":
-					postLogin($path, $userSecurityDbName);
+					postLogin($path, $userSecurityDbName, $userStatisticsDbName);
 					break;
 				case "odzyskajkonto":
 					postRecoverAccount($path, $userSecurityDbName, $userDataDbName);
 					break;
 				case "zmianahasla":
-					postChangePassword($path, $userSecurityDbName, $userDataDbName);
+					postChangePassword($path, $userSecurityDbName, $userStatisticsDbName, $userDataDbName);
 					break;
 				case "zmienprofil":
 					postEditProfile($path, $userSecurityDbName, $userDataDbName, $userData);
+					break;
+				case "dodajkonto":
+					postAddFacebookAccount($path, $userStatisticsDbName, $userData, $facebookAccountDbName);
+					break;
+				case "dodajzdjecie":
+					postAddFacebookPhoto($path, $userStatisticsDbName, $userData, $facebookAccountDbName);
+					break;
+				case "dodajzdjeciepotwierdz":
+					postAddFacebookPhotoConfirm($path, $facebookPhotoDbName);
 					break;
 				
 				case "wyslijwiadomoscsms":
@@ -123,53 +121,35 @@ header('Content-Type: text/html;charset=UTF-8');
 			
 			switch($pageId)
 			{
-				case "paneladministracyjny":
-					include("account/adminpanel.php");
-					break;
 				case "listauzytkownikow":
-					include("account/adminpanel.php");
+					include("account/userslist.php");
 					break;
 				case "listazalogowanychuzytkownikow":
-					include("account/adminpanel.php");
+					include("account/loggeduserslist.php");
 					break;
-				case "salazaawansowany":
-					include("account/adminpanel.php");
+				case "listakont":
+					include("facebook/accountslist.php");
 					break;
-				case "listasalzaawansowany":
-					include("account/adminpanel.php");
+				case "kontozaawansowany":
+					include("facebook/account.php");
 					break;
-				case "listazarezerwowanychsalzaawansowany":
-					include("account/adminpanel.php");
+				case "dodajkonto":
+					include("facebook/addaccount.php");
 					break;
-				case "dodajsale":
-					include("account/adminpanel.php");
+				case "listazdjec":
+					include("facebook/photoslist.php");
 					break;
-				case "edytujsale":
-					include("account/adminpanel.php");
+				case "zdjeciezaawansowany":
+					include("facebook/photo.php");
 					break;
-				case "usunsale":
-					include("account/adminpanel.php");
+				case "dodajzdjecie":
+					include("facebook/addphoto.php");
 					break;
-				case "rezerwacjazaawansowany":
-					include("account/adminpanel.php");
+				case "dodajzdjeciepotwierdz":
+					include("facebook/addphotoconfirm.php");
 					break;
-				case "listarezerwacjizaawansowany":
-					include("account/adminpanel.php");
-					break;
-				case "dodajrezerwacjezaawansowany":
-					include("account/adminpanel.php");
-					break;
-				case "potwierdzrezerwacje":
-					include("account/adminpanel.php");
-					break;
-				case "anulujrezerwacje":
-					include("account/adminpanel.php");
-					break;
-				case "uslugazaawansowany":
-					include("account/adminpanel.php");
-					break;
-				case "listauslugzaawansowany":
-					include("account/adminpanel.php");
+				case "statystykizdjec":
+					include("facebook/photosstatistics.php");
 					break;
 				case "informacjesystemowe":
 					include("account/systeminfo.php");
@@ -178,44 +158,12 @@ header('Content-Type: text/html;charset=UTF-8');
 					include("account/smsgatewaytest.php");
 					break;
 				case "zaawansowanaedycjabazydanych":
-					include("account/adminpanel.php");
+					include("account/advanceddatabaseedit.php");
 					break;
 				case "ustawieniaadministratora":
-					include("account/adminpanel.php");
+					include("account/adminsettings.php");
 					break;
-				case "profilzaawansowany":
-					include("account/adminpanel.php");
-					break;
-				case "paneluzytkownika":
-					include("account/userpanel.php");
-					break;
-				case "sala":
-					include("account/userpanel.php");
-					break;
-				case "listasal":
-					include("account/userpanel.php");
-					break;
-				case "listazarezerwowanychsal":
-					include("account/userpanel.php");
-					break;
-				case "rezerwacja":
-					include("account/userpanel.php");
-					break;
-				case "listarezerwacji":
-					include("account/userpanel.php");
-					break;
-				case "dodajrezerwacje":
-					include("account/userpanel.php");
-					break;
-				case "usluga":
-					include("account/userpanel.php");
-					break;
-				case "listauslug":
-					include("account/userpanel.php");
-					break;
-				case "profil":
-					include("account/profile.php");
-					break;
+				
 				case "informacje":
 					include("about.php");
 					break;
@@ -234,6 +182,18 @@ header('Content-Type: text/html;charset=UTF-8');
 				case "logowanie":
 					include("account/login.php");
 					break;
+				case "odzyskajkonto":
+					include("account/recoveraccount.php");
+					break;
+				case "zmianahasla":
+					include("account/pwchange.php");
+					break;
+				case "profil":
+					include("account/profile.php");
+					break;
+				case "profilzaawansowany":
+					include("account/profile.php");
+					break;
 				case "edytujprofil":
 					include("account/editprofile.php");
 					break;
@@ -242,12 +202,6 @@ header('Content-Type: text/html;charset=UTF-8');
 					break;
 				case "automatycznewylogowanie":
 					include("account/autologout.php");
-					break;
-				case "odzyskajkonto":
-					include("account/recoveraccount.php");
-					break;
-				case "zmianahasla":
-					include("account/pwchange.php");
 					break;
 				default:
 					include("main.php");

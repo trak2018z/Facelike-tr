@@ -5,8 +5,14 @@ $loginClickatell = 'Facelike';
 $hasloClickatell = 'EOHWVcaMEcFRcT';
 
 $loginClickatellDev = 'SMSFacelike';
-$hasloClickatellDev = 'RADWCVaHcKHBMT';
+$hasloClickatellDev = 'DantiNgi36#kiuXw';
 $clientIdClickatellDev = 'SSZS54';
 $apiIdClickatellDev = '3548253';
-$apiTokenClickatellDev = 'm6XUXvG1m4J5zGdmP4WQr8Ef9lBMURbmZYQKpAbeTK8WdToUL4eq6rxJond6kyDCMkO.Zkr3RDgy';
+$apiTokenClickatellDev = 'g1GIoDjmRraAun7ufvF6mw==';
+
+$loginSmsglobalDev = 'SMSFacelike';
+$hasloSmsglobalDev = 'SanDarno92c^dx6h';
+$clientIdSmsglobalDev = '';
+$apiIdSmsglobalDev = '';
+$apiTokenSmsglobalDev = '';
 ?>

@@ -14,15 +14,15 @@
 				require 'account/includes/config.php';
 				
 				$signed = checksession(true);
+				$userData = null;
 				
 				if($signed) {
-					$signed = checksessionrefresh($path, $userSecurityDbName, getidfromsession());
+					$signed = checksessionrefresh($path, $userStatisticsDbName, getidfromsession());
 				}
 				
 				if($signed) {
 					//Pobierz dane o użytkowniku i zapisz je do zmiennej $userData
 					$userData = data($path, $userDataDbName);
-					//echo "userData=".json_decode($userData, true)."<br />";	//test
 					
 					if(checkadmin($path, $userSecurityDbName, getidfromsession(), $userData)) {
 						//Widok dla zalogowanego administratora
@@ -33,15 +33,14 @@
 								<a href="index.php?id=listauzytkownikow" class="dropdown-item">Użytkownicy</a>
 								<a href="index.php?id=listazalogowanychuzytkownikow" class="dropdown-item">Zalogowani użytkownicy</a>
 								<div class="dropdown-divider"></div>
-								<a href="index.php?id=listakontfacebook" class="dropdown-item">Konta na Facebook-u</a>
-								<a href="index.php?id=generatorkontfacebook" class="dropdown-item">Generator kont na Facebook-u</a>
+								<a href="index.php?id=listakont" class="dropdown-item">Konta na Facebook-u</a>
+								<a href="index.php?id=dodajkonto" class="dropdown-item">Generator kont na Facebook-u</a>
 								<div class="dropdown-divider"></div>
 								<a href="index.php?id=listazdjec" class="dropdown-item">Zdjęcia</a>
 								<a href="index.php?id=dodajzdjecie" class="dropdown-item">Dodaj zdjęcie</a>
 								<a href="index.php?id=statystykizdjec" class="dropdown-item">Statystyki zdjęć</a>
 								<div class="dropdown-divider"></div>
 								<a href="index.php?id=informacjesystemowe" class="dropdown-item">System</a>
-								<a href="index.php?id=ustawieniaadministratora" class="dropdown-item">Zaawansowane</a>
 								<a href="index.php?id=testbramkisms" class="dropdown-item">Test bramki SMS</a>
 								<a href="index.php?id=zaawansowanaedycjabazydanych" class="dropdown-item">Zaawansowana edycja bazy danych</a>
 								<a href="index.php?id=ustawieniaadministratora" class="dropdown-item">Ustawienia administratora</a>
