@@ -85,15 +85,17 @@ if(empty($errors)) {
 	//Auto logowanie
 	createsession($activationUserId, $path);	//Zapisujemy ID użytkownika do sesji i oznaczamy go jako zalogowanego
 	
-	changeloginstatus($path, $userSecurityDbName, $activationUserId, 3);	//Zmiana statusu logowania
+	changeloginstatus($path, $userStatisticsDbName, $activationUserId, 3);	//Zmiana statusu logowania
 	
 	header('Location: index.php');	//Przekierowanie
 	//echo '<p class="success">Zostałeś zalogowany. Możesz przejść na <a href="index.php">stronę główną</a></p>';
 }
 else {
 	//Jeśli wystąpiły jakieś błędy, to je pokaż
+	echo '<div class="error-box">';
 	foreach ($errors as $error) {
-		echo '<p class="error">'.$error.'</p>';
+		echo $error.'<br />';
 	}
+	echo '</div>';
 }
 ?>

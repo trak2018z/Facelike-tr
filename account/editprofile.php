@@ -3,8 +3,19 @@ $path = "./couchdb/";	//Ścieżka operacyjna
 
 //Upewnij się że użytkownik jest zalogowany
 if(!checksession()) {
-	header('Location: index.php');
-	echo '<p class="error">Przykro nam, ale ta strona jest dostępna tylko dla zalogowanych użytkowników.</p>';
+	if(headers_sent()) {
+		?>
+		<script type="text/javascript">
+		//<![CDATA[
+			location.replace('index.php');
+		 //]]>
+		</script>
+		<?php
+	}
+	else{
+		exit(header('Location: index.php'));
+	}
+	echo '<div class="error-box">Przykro nam, ale ta strona jest dostępna tylko dla zalogowanych użytkowników.</div>';
 	
 	die;
 }
@@ -13,8 +24,19 @@ $userId = getidfromsession();
 
 //Upewnij się, że użytkownik istnieje
 if(!checkid($path, $userDataDbName, $userId)) {
-	header('Location: index.php');
-	echo '<p class="error">Przykro nam, ale użytkownik o podanym identyfikatorze nie istnieje.</p>';
+	if(headers_sent()) {
+		?>
+		<script type="text/javascript">
+		//<![CDATA[
+			location.replace('index.php');
+		 //]]>
+		</script>
+		<?php
+	}
+	else{
+		exit(header('Location: index.php'));
+	}
+	echo '<div class="error-box">Przykro nam, ale użytkownik o podanym identyfikatorze nie istnieje.</div>';
 	
 	die;
 }
@@ -32,64 +54,139 @@ else {
 
 <div class="container body-content">
 	<div class="jumbotron">
-		<form></form>
-		<center>
-			<form class="form-change_profil_container" method="post" action="index.php" id="zmienprofil" onload="formField(this);">
-				<div class="form-change_profil_title">
-					<h2>Edytuj profil <?php echo $nazwa; ?></h2>
-				</div>
-				
-				<label class="form-change_profil_name" style="font-style:normal; for="imie"><b>Imię:</b><font color="black"> <?php echo $userData['imie'] ?></font></label><br />
-				<input class="form-change_profil_field" type="text" name="imie" id="imie" placeholder="imię" size="25" maxlength="32" /><br />
-				
-				<label class="form-change_profil_name" for="nazwisko"><b>Nazwisko:</b><font color="black"> <?php echo $userData['nazwisko'] ?></font></label><br />
-				<input class="form-change_profil_field" type="text" name="nazwisko" id="nazwisko" placeholder="nazwisko" size="25" maxlength="32" /><br />
-				
-				<label class="form-change_profil_name" for="plec"><b>Plec:</b><font color="black"> <?php echo getplec($userData['plec']) ?></font></label><br />
-				<input type="hidden" name="plec" value="" />
-				<input type="radio" name="plec" value="m" />&nbsp;mężczyzna&nbsp;&nbsp;&nbsp;
-				<input type="radio" name="plec" value="k" />&nbsp;kobieta<br /><br />
-				
-				<label class="form-change_profil_name" for="kraj"><b>Kraj:</b><font color="black"> <?php echo $userData['adres']['kraj'] ?></font></label><br />
-				<input class="form-change_profil_field" type="text" name="kraj" id="kraj" placeholder="kraj" size="25" maxlength="20" /><br />
-				
-				<label class="form-change_profil_name" for="wojewodztwo"><b>Województwo:</b><font color="black"> <?php echo $userData['adres']['wojewodztwo'] ?></font></label><br />
-				<input class="form-change_profil_field" type="text" name="wojewodztwo" id="wojewodztwo" placeholder="województwo" size="25" maxlength="20" /><br />
-				
-				<label class="form-change_profil_name" for="miasto"><b>Miasto:</b><font color="black"> <?php echo $userData['adres']['miasto'] ?></font></label><br />
-				<input class="form-change_profil_field" type="text" name="miasto" id="miasto" placeholder="miasto" size="25" maxlength="32" /><br />
-				
-				<label class="form-change_profil_name" for="ulica"><b>Ulica:</b><font color="black"> <?php echo $userData['adres']['ulica'] ?></font></label><br />
-				<input class="form-change_profil_field" type="text" name="ulica" id="ulica" placeholder="ulica i numer domu" size="25" maxlength="64" /><br />
-				
-				<label class="form-change_profil_name" for="poczta"><b>Poczta:</b><font color="black"> <?php echo $userData['adres']['poczta'] ?></font></label><br />
-				<input class="form-change_profil_field" type="text" name="poczta" id="poczta" placeholder="kod pocztowy" size="25" maxlength="6" pattern="^[0-9]{2}-?[0-9]{3}$" title="▪ 12-345\n▪ 12345" /><br />
-				
-				<label class="form-change_profil_name" for="telefon"><b>Telefon:</b><font color="black"> <?php echo $userData['telefon'] ?></font></label><br />
-				<input class="form-change_profil_field" type="tel" name="telefon" id="telefon" placeholder="numer telefonu" size="25" maxlength="15" pattern="^[0-9]{1}[0-9 ]{5,13}[0-9]{1}$" title="▪ minimum 7 znaków\n▪ maximum 15 znaków\n▪ może zawierać tylko cyfry" /><br />
-				
-				<label class="form-change_profil_name" for="email"><b>Email:</b><font color="black"> <?php echo $userData['mail'] ?></font></label><br />
-				<input class="form-change_profil_field" type="email" name="email" id="email" placeholder="example@domena.tld" size="25" maxlength="254" pattern="^[a-zA-Z0-9._%+-]{1,64}@[a-zA-Z0-9.-]+\.(?:[a-zA-Z]{2}|com|org|net|gov|mil|biz|info|mobi|name|aero|jobs|museum)$" title="example@domena.tld" /><br />
-				
-				<label class="form-change_profil_name" for="password_o"><b>Obecne hasło *</b></label><br />
-				<input class="form-change_profil_field" type="password" name="password_o" id="password_o" placeholder="hasło" size="25" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\!\@\#\$\%\^\&\*\(\)\_\+\-\=])(?!.*\s).{8,}$" title="▪ minimum 8 znaków\n▪ musi zawierać co najmniej jedną małą literę\n▪ musi zawierać co najmniej jedną dużą literę\n▪ musi zawierać co najmniej jedną cyfrę\n▪ musi zawierać co najmniej jeden znak z grupy !@#$%^&*()_+-=" /><br />
-				
-				<label class="form-change_profil_name" for="password"><b>Nowe hasło *</b></label><br />
-				<input class="form-change_profil_field" type="password" name="password" id="password" placeholder="hasło" size="25" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\!\@\#\$\%\^\&\*\(\)\_\+\-\=])(?!.*\s).{8,}$" title="▪ minimum 8 znaków\n▪ musi zawierać co najmniej jedną małą literę\n▪ musi zawierać co najmniej jedną dużą literę\n▪ musi zawierać co najmniej jedną cyfrę\n▪ musi zawierać co najmniej jeden znak z grupy !@#$%^&*()_+-=" /><br />
-				
-				<label class="form-change_profil_name" for="password_v"><b>Powtórz nowe hasło *</b></label><br />
-				<input class="form-change_profil_field" type="password" name="password_v" id="password_v" placeholder="powtórzone hasło" size="25" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\!\@\#\$\%\^\&\*\(\)\_\+\-\=])(?!.*\s).{8,}$" title="▪ musi być takie same jak powyżej" /><br />
-				
-				<?php
-				echo "* - uzupełnij tylko jeśli chcesz zmienić hasło<br />";
-				?>
-				
-				<input type="hidden" name="id" value="zmienprofil" />
-				<div class="submit-save_profil_container">
-					<input class="submit-save_profil_button" type="submit" value="Zapisz zmiany" />
-				</div>
-			</form>
-		</center>
+		<h2>Edytuj profil <?php echo $nazwa.' '.$userData['imie'].' '.$userData['nazwisko']; ?></h2>
+		<hr />
+		<form class="form-change_profil_container" method="post" action="index.php" id="zmienprofil" onload="formField(this);">
+			<table>
+				<tr>
+					<td>Imię: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['imie']; ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input class="form-change_profil_field" type="text" name="imie" id="imie" placeholder="imię" size="25" maxlength="32" />
+					</td>
+				</tr>
+				<tr>
+					<td>Nazwisko: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['nazwisko']; ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input class="form-change_profil_field" type="text" name="nazwisko" id="nazwisko" placeholder="nazwisko" size="25" maxlength="32" />
+					</td>
+				</tr>
+				<tr>
+					<td>Płeć: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo getplec($userData['plec']); ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input type="hidden" name="plec" value="" />
+						<input type="radio" name="plec" value="m" />&nbsp;mężczyzna&nbsp;&nbsp;&nbsp;
+						<input type="radio" name="plec" value="k" />&nbsp;kobieta
+					</td>
+				</tr>
+				<tr>
+					<td>Kraj: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['kraj']; ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input class="form-change_profil_field" type="text" name="kraj" id="kraj" placeholder="kraj" size="25" maxlength="20" />
+					</td>
+				</tr>
+				<tr>
+					<td>Województwo: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['wojewodztwo']; ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input class="form-change_profil_field" type="text" name="wojewodztwo" id="wojewodztwo" placeholder="województwo" size="25" maxlength="20" />
+					</td>
+				</tr>
+				<tr>
+					<td>Miasto: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['miasto']; ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input class="form-change_profil_field" type="text" name="miasto" id="miasto" placeholder="miasto" size="25" maxlength="32" />
+					</td>
+				</tr>
+				<tr>
+					<td>Ulica: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['ulica']; ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input class="form-change_profil_field" type="text" name="ulica" id="ulica" placeholder="ulica i numer domu" size="25" maxlength="64" />
+					</td>
+				</tr>
+				<tr>
+					<td>Poczta: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['poczta']; ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input class="form-change_profil_field" type="text" name="poczta" id="poczta" placeholder="kod pocztowy" size="25" maxlength="6" pattern="^[0-9]{2}-?[0-9]{3}$" title="▪ 12-345\n▪ 12345" />
+					</td>
+				</tr>
+				<tr>
+					<td>Telefon: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['telefon']; ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input class="form-change_profil_field" type="tel" name="telefon" id="telefon" placeholder="numer telefonu" size="25" maxlength="15" pattern="^[0-9]{1}[0-9 ]{5,13}[0-9]{1}$" title="▪ minimum 7 znaków\n▪ maximum 15 znaków\n▪ może zawierać tylko cyfry" />
+					</td>
+				</tr>
+				<tr>
+					<td>Email: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['mail']; ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input class="form-change_profil_field" type="email" name="email" id="email" placeholder="example@domena.tld" size="25" maxlength="254" pattern="^[a-zA-Z0-9._%+-]{1,64}@[a-zA-Z0-9.-]+\.(?:[a-zA-Z]{2}|com|org|net|gov|mil|biz|info|mobi|name|aero|jobs|museum)$" title="example@domena.tld" />
+					</td>
+				</tr>
+				<tr>
+					<td>Obecne&nbsp;hasło&nbsp;* </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo ""; ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input class="form-change_profil_field" type="password" name="password_o" id="password_o" placeholder="hasło" size="25" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\!\@\#\$\%\^\&\*\(\)\_\+\-\=])(?!.*\s).{8,}$" title="▪ minimum 8 znaków\n▪ musi zawierać co najmniej jedną małą literę\n▪ musi zawierać co najmniej jedną dużą literę\n▪ musi zawierać co najmniej jedną cyfrę\n▪ musi zawierać co najmniej jeden znak z grupy !@#$%^&*()_+-=" />
+					</td>
+				</tr>
+				<tr>
+					<td>Nowe&nbsp;hasło&nbsp;* </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo ""; ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input class="form-change_profil_field" type="password" name="password" id="password" placeholder="hasło" size="25" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\!\@\#\$\%\^\&\*\(\)\_\+\-\=])(?!.*\s).{8,}$" title="▪ minimum 8 znaków\n▪ musi zawierać co najmniej jedną małą literę\n▪ musi zawierać co najmniej jedną dużą literę\n▪ musi zawierać co najmniej jedną cyfrę\n▪ musi zawierać co najmniej jeden znak z grupy !@#$%^&*()_+-=" />
+					</td>
+				</tr>
+				<tr>
+					<td>Powtórz&nbsp;nowe&nbsp;hasło&nbsp;* </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo ""; ?></font></td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td>
+						<input class="form-change_profil_field" type="password" name="password_v" id="password_v" placeholder="powtórzone hasło" size="25" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\!\@\#\$\%\^\&\*\(\)\_\+\-\=])(?!.*\s).{8,}$" title="▪ musi być takie same jak powyżej" />
+					</td>
+				</tr>
+			</table>
+			<?php
+			echo "* - uzupełnij tylko jeśli chcesz zmienić hasło<br />";
+			?>
+			<input type="hidden" name="id" value="zmienprofil" />
+			<br />
+			<center>
+				<input type="submit" class="btn btn-primary btn-lg" value="Zapisz zmiany &raquo;" />
+			</center>
+		</form>
 	</div>
 </div>
 

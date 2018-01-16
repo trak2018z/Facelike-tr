@@ -3,8 +3,19 @@ $path = "./couchdb/";	//Ścieżka operacyjna
 
 //Upewnij się że użytkownik jest zalogowany
 if(!checksession()) {
-	exit(header('Location: index.php'));
-	echo '<p class="error">Przykro nam, ale ta strona jest dostępna tylko dla zalogowanych użytkowników.</p>';
+	if(headers_sent()) {
+		?>
+		<script type="text/javascript">
+		//<![CDATA[
+			location.replace('index.php');
+		 //]]>
+		</script>
+		<?php
+	}
+	else{
+		exit(header('Location: index.php'));
+	}
+	echo '<div class="error-box">Przykro nam, ale ta strona jest dostępna tylko dla zalogowanych użytkowników.</div>';
 	
 	die;
 }
@@ -13,16 +24,38 @@ $userId = getidfromsession();
 
 //Upewnij się, że użytkownik istnieje
 if(!checkid($path, $userDataDbName, $userId)) {
-	exit(header('Location: index.php'));
-	echo '<p class="error">Przykro nam, ale użytkownik o podanym identyfikatorze nie istnieje.</p>';
+	if(headers_sent()) {
+		?>
+		<script type="text/javascript">
+		//<![CDATA[
+			location.replace('index.php');
+		 //]]>
+		</script>
+		<?php
+	}
+	else{
+		exit(header('Location: index.php'));
+	}
+	echo '<div class="error-box">Przykro nam, ale użytkownik o podanym identyfikatorze nie istnieje.</div>';
 	
 	die;
 }
 
 //Sprawdzenie czy użytkownik to admin
 if(!checkadmin($path, $userSecurityDbName, $userId, $userData)) {
-	exit(header('Location: index.php'));
-	echo '<p class="error">Przykro nam, ale administrator o podanym identyfikatorze nie istnieje.</p>';
+	if(headers_sent()) {
+		?>
+		<script type="text/javascript">
+		//<![CDATA[
+			location.replace('index.php');
+		 //]]>
+		</script>
+		<?php
+	}
+	else{
+		exit(header('Location: index.php'));
+	}
+	echo '<div class="error-box">Przykro nam, ale administrator o podanym identyfikatorze nie istnieje.</div>';
 	
 	die;
 }
@@ -204,7 +237,6 @@ else {
 				</tr>
 			</table>
 		</form>
-		<br />
 		
 		<script type="text/javascript">
 		//<![CDATA[
@@ -254,6 +286,7 @@ else {
 		//Informacje zwrotne
 		if($response != null && $response != '' && $response != false) {
 			?>
+			<br />
 			<h3>Informacja zwrotna</h3>
 			<p>Wiadomość SMS do <?php echo $nazwa; ?> na numer <?php echo $numer; ?></p>
 			<table class="received-table_message">
@@ -282,7 +315,6 @@ else {
 					</td>
 				</tr>
 			</table>
-			<br />
 			<?php
 		}
 		?>

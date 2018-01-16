@@ -270,6 +270,27 @@ function view_response($var)
 	}
 }
 
+function getdatafromarray($var, $data)
+{
+	$typ = gettype($var);
+	
+	if($typ == "array") {
+		while(list($klucz, $wartosc) = each($var)) {
+			if($klucz == $data) {
+				return $wartosc;
+			}
+		}
+	}
+	else if($typ == "object") {
+		return var_dump($var);
+	}
+	else {
+		return $var;
+	}
+	
+	return false;
+}
+
 function get_address($path)
 {
 	require $path."config.php";

@@ -4,12 +4,13 @@ require_once $path."datafun.php";
 
 $userDataDbName = 'uzytkownicy_dane';
 $userSecurityDbName = 'uzytkownicy_zabezpieczenia';
+$userStatisticsDbName = 'uzytkownicy_statystyki';
 $facebookAccountDbName = "facebook_konta";
 $facebookPhotoDbName = "facebook_zdjecia";
 
 $response = checkcouchdb($path);
 if((empty($response)) && ($response != '0')) {
-	die ('<p class="error">Nie udało się połączyć z bazą danych.</p>');
+	die ('<div class="error-box">Nie udało się połączyć z bazą danych.</div>');
 }
 
 if(isset($_SESSION) != 1) {

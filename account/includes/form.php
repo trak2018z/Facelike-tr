@@ -1,7 +1,7 @@
 <?php
-function postRegister($path, $userSecurityDbName, $userDataDbName)
+function postRegister($path, $userSecurityDbName, $userStatisticsDbName, $userDataDbName)
 {
-	if ($_POST) {
+	if($_POST) {
 		//Zczytanie danych
 		$imie = cleardata($_POST['imie']);
 		$nazwisko = cleardata($_POST['nazwisko']);
@@ -93,7 +93,7 @@ function postRegister($path, $userSecurityDbName, $userDataDbName)
 		if(!empty($errors)) {
 			//Jeśli wystąpiły jakieś błędy, to je pokaż
 			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
+			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 			<script type="text/javascript">
 			//<![CDATA[
 				swal( {
@@ -144,7 +144,20 @@ function postRegister($path, $userSecurityDbName, $userDataDbName)
 				$ileTwo = max($ileTwo, $numer);
 			}
 			
-			$ileMax = max($ileOne, $ileTwo);
+			$responseList = listofdocument($path, $userStatisticsDbName);
+			
+			$resultList = string_to_array($responseList, true);
+			$arrayList = $resultList[0];
+			$ile = $arrayList['total_rows'];
+			
+			$ileThree = 0;
+			for($i=0; $i<$ile; $i++) {
+				$nazwa = $arrayList['rows'][$i]['id'];
+				$numer = substr($nazwa, 5);
+				$ileThree = max($ileThree, $numer);
+			}
+			
+			$ileMax = max(max($ileOne, $ileTwo), $ileThree);
 			$documentId = 'osoba'.($ileMax + 1);
 			
 			//Usuwanie spacji z numeru telefonu
@@ -182,12 +195,15 @@ function postRegister($path, $userSecurityDbName, $userDataDbName)
 					'rejestracja_sekunda' => (int)$rejestracjaSekunda
 				)
 			);
-			$document = array(
+			$securityDocument = array(
 				'_id' => $documentId,
 				'login' => $login,
 				'password' => $password,
 				'typ' => 'niepotwierdzony',
 				'mkey' => $mKey
+			);
+			$statisticsDocument = array(
+				'_id' => $documentId
 			);
 			
 			//Zapis nowego dokumentu z informacjami o użytkowniku do bazy danych
@@ -198,17 +214,24 @@ function postRegister($path, $userSecurityDbName, $userDataDbName)
 			$createOne = array_key_exists('error', $array);
 			
 			//Zapis nowego dokumentu z wrażliwymi informacjami o użytkowniku do bazy danych
-			$response = createdocument($path, $userSecurityDbName, $document);
+			$response = createdocument($path, $userSecurityDbName, $securityDocument);
 			
 			$result = string_to_array($response, true);
 			$array = $result[0];
 			$createTwo = array_key_exists('error', $array);
 			
-			if($createOne == true || $createTwo == true) {
+			//Zapis nowego dokumentu ze statystykami o użytkowniku do bazy danych
+			$response = createdocument($path, $userStatisticsDbName, $statisticsDocument);
+			
+			$result = string_to_array($response, true);
+			$array = $result[0];
+			$createThree = array_key_exists('error', $array);
+			
+			if($createOne == true || $createTwo == true || $createThree == true) {
 				$error = "Wystąpił błąd przy rejestrowaniu użytkownika";
 				
 				?>
-				<div class="error-box"><?php echo $error; ?></div>
+				<div class="error-box"><?php echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error; ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
 					swal( {
@@ -360,7 +383,7 @@ function postRegister($path, $userSecurityDbName, $userDataDbName)
 				
 				if($typKomunikatu == 'success') {
 					?>
-					<div class="validation_success-box"><?php foreach ($komunikaty as $komunikat) { echo $komunikat."<br />"; } ?></div>
+					<div class="validation_success-box"><?php foreach ($komunikaty as $komunikat) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$komunikat."<br />"; } ?></div>
 					<script type="text/javascript">
 					//<![CDATA[
 						swal( {
@@ -381,7 +404,7 @@ function postRegister($path, $userSecurityDbName, $userDataDbName)
 				}
 				else if($typKomunikatu == 'error') {
 					?>
-					<div class="validation_error-box"><?php foreach ($komunikaty as $komunikat) { echo $komunikat."<br />"; } ?></div>
+					<div class="validation_error-box"><?php foreach ($komunikaty as $komunikat) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$komunikat."<br />"; } ?></div>
 					<script type="text/javascript">
 					//<![CDATA[
 						swal( {
@@ -406,7 +429,7 @@ function postRegister($path, $userSecurityDbName, $userDataDbName)
 	}
 }
 
-function postLogin($path, $userSecurityDbName)
+function postLogin($path, $userSecurityDbName, $userStatisticsDbName)
 {
 	if($_POST) {
 		//Zczytanie danych
@@ -442,7 +465,7 @@ function postLogin($path, $userSecurityDbName)
 			$errors[] = 'Użytkownik o podanym loginie i haśle nie istnieje';
 			
 			//Zmiana statusu logowania
-			changeloginstatus($path, $userSecurityDbName, $auth[1], 0);
+			changeloginstatus($path, $userStatisticsDbName, $auth[1], 0);
 		}
 		else {
 			$type = "niepotwierdzony";
@@ -451,7 +474,7 @@ function postLogin($path, $userSecurityDbName)
 				$errors[] = 'Konto nie zostało jeszcze aktywowane';
 				
 				//Zmiana statusu logowania
-				changeloginstatus($path, $userSecurityDbName, $auth[1], 1);
+				changeloginstatus($path, $userStatisticsDbName, $auth[1], 1);
 			}
 		}
 		
@@ -459,16 +482,88 @@ function postLogin($path, $userSecurityDbName)
 			//Logowanie
 			createsession($auth[1], $path);
 			
-			//Zmiana statusu logowania
-			changeloginstatus($path, $userSecurityDbName, $auth[1], 2);
+			//Deklaracja zmiennej
+			$status = getdatafromarray(getuserdata($path, $userStatisticsDbName, $auth[1], "loginstatus"), "status");
 			
-			exit(header('Location: index.php'));
-			//echo '<p class="success">Zostałeś zalogowany. Możesz przejść na <a href="index.php">stronę główną</a></p>';
+			//Zmiana statusu logowania
+			changeloginstatus($path, $userStatisticsDbName, $auth[1], 2);
+			
+			//Pasek postępu
+			?>
+			<div class="loginLoading" style="width: 100%; position: absolute; top: 140px; left: 0px; z-index: 100;">
+				<div class="container body-content">
+					<div class="jumbotron" style="padding-top: 170px; padding-bottom: 170px;">
+						<div class="progress">
+							<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<?php
+			
+			//Przekierowanie
+			if(headers_sent()) {
+				?>
+				<script type="text/javascript">
+				//<![CDATA[
+					function reload() {
+						location.replace('index.php');
+					}
+					
+					function getStatus() {
+						var dbName = '<?php echo $userStatisticsDbName; ?>';
+						var documentId = '<?php echo $auth[1]; ?>';
+						var dataOne = "loginstatus";
+						var dataTwo = "status";
+						var status = '<?php echo $status; ?>';
+						
+						jQuery(document).ready(function() {
+							$.ajax({
+								type: "POST",
+								url: "account/logindata.php",
+								data: {
+									dbName: JSON.stringify(dbName),
+									documentId: JSON.stringify(documentId),
+									dataOne: JSON.stringify(dataOne),
+									dataTwo: JSON.stringify(dataTwo),
+									status: JSON.stringify(status),
+								},
+								dataType: "HTML",	//"HTML"	//"JSON"
+								cache: false,
+								beforeSend: function() {
+									$(".loginLoading").show();
+								},
+								success: function(data, msg) {
+									//Ten fragment wykona się po POMYŚLNYM zakończeniu połączenia
+									$(".loginLoading").hide();
+								},
+								complete: function(r) {
+									//Ten fragment wykona się po ZAKONCZENIU połączenia
+									reload();
+								},
+								error: function(data, error) {
+									//Ten fragment wykona się w przypadku BŁĘDU
+									$(".loginLoading").hide();
+									console.log(error);
+								}
+							});
+						});
+					}
+					
+					getStatus();
+				 //]]>
+				</script>
+				<?php
+			}
+			else{
+				exit(header('Location: index.php'));
+			}
+			//echo '<div class="success-box">Zostałeś zalogowany. Możesz przejść na <a href="index.php">stronę główną</a></div>';
 		}
 		else {
 			//Jeśli wystąpiły jakieś błędy, to je pokaż
 			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
+			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 			<script type="text/javascript">
 			//<![CDATA[
 				swal( {
@@ -526,7 +621,7 @@ function postRecoverAccount($path, $userSecurityDbName, $userDataDbName)
 		if(!empty($errors)) {
 			//Jeśli wystąpiły jakieś błędy, to je pokaż
 			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
+			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 			<script type="text/javascript">
 			//<![CDATA[
 				swal( {
@@ -602,7 +697,7 @@ function postRecoverAccount($path, $userSecurityDbName, $userDataDbName)
 				$error = "Wystąpił błąd przy tworzeniu klucza ratunkowego";
 				
 				?>
-				<div class="error-box"><?php echo $error; ?></div>
+				<div class="error-box"><?php echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error; ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
 					swal( {
@@ -754,7 +849,7 @@ function postRecoverAccount($path, $userSecurityDbName, $userDataDbName)
 				
 				if($typKomunikatu == 'success') {
 					?>
-					<div class="validation_success-box"><?php foreach ($komunikaty as $komunikat) { echo $komunikat."<br />"; } ?></div>
+					<div class="validation_success-box"><?php foreach ($komunikaty as $komunikat) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$komunikat."<br />"; } ?></div>
 					<script type="text/javascript">
 					//<![CDATA[
 						swal( {
@@ -775,7 +870,7 @@ function postRecoverAccount($path, $userSecurityDbName, $userDataDbName)
 				}
 				else if($typKomunikatu == 'error') {
 					?>
-					<div class="validation_error-box"><?php foreach ($komunikaty as $komunikat) { echo $komunikat."<br />"; } ?></div>
+					<div class="validation_error-box"><?php foreach ($komunikaty as $komunikat) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$komunikat."<br />"; } ?></div>
 					<script type="text/javascript">
 					//<![CDATA[
 						swal( {
@@ -800,7 +895,7 @@ function postRecoverAccount($path, $userSecurityDbName, $userDataDbName)
 	}
 }
 
-function postChangePassword($path, $userSecurityDbName, $userDataDbName)
+function postChangePassword($path, $userSecurityDbName, $userStatisticsDbName, $userDataDbName)
 {
 	if($_POST) {
 		//Zczytanie danych
@@ -834,7 +929,7 @@ function postChangePassword($path, $userSecurityDbName, $userDataDbName)
 		if(!empty($errors)) {
 			//Jeśli wystąpiły jakieś błędy, to je pokaż
 			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
+			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 			<script type="text/javascript">
 			//<![CDATA[
 				swal( {
@@ -856,8 +951,10 @@ function postChangePassword($path, $userSecurityDbName, $userDataDbName)
 		}
 		else {
 			//Jeżeli nie ma błędów to przechodzimy dalej
-			$updateOk = false;
-			$updateError = false;
+			$updateOneOk = false;
+			$updateOneError = false;
+			$updateTwoOk = false;
+			$updateTwoError = false;
 			
 			//Tablica komunikatów
 			$komunikaty = array();
@@ -875,9 +972,8 @@ function postChangePassword($path, $userSecurityDbName, $userDataDbName)
 			$recovery = getuserdata($path, $userSecurityDbName, $userId, 'recovery');
 			
 			//Tworzenie dokumentu
-			$document = array(
+			$securityDocument = array(
 				'password' => $password,
-				'loginstatus' => $loginStatus,
 				'recovery' => array(
 					'rkey' => $rKey,
 					'rok' => $recovery['rok'],
@@ -888,32 +984,44 @@ function postChangePassword($path, $userSecurityDbName, $userDataDbName)
 					'sekunda' => $recovery['sekunda']
 				)
 			);
+			$statisticsDocument = array(
+				'loginstatus' => $loginStatus
+			);
 			
 			//Zapisanie nowego hasła i tablicy ratunkowej do bazy danych
-			$response = updatedocument($path, $userSecurityDbName, $userId, $document);
+			$response = updatedocument($path, $userSecurityDbName, $userId, $securityDocument);
 			
 			$result = string_to_array($response[1], true);
 			$array = $result[0];
 			
-			$updateOk = array_key_exists('ok', $array);
-			$updateError = array_key_exists('error', $array);
+			$updateOneOk = array_key_exists('ok', $array);
+			$updateOneError = array_key_exists('error', $array);
 			
-			if($updateOk == true && $updateError == false) {
+			//Zapis dokumentu ze statystykami o użytkowniku do bazy danych
+			$response = updatedocument($path, $userStatisticsDbName, $userId, $statisticsDocument);
+			
+			$result = string_to_array($response[1], true);
+			$array = $result[0];
+			
+			$updateTwoOk = array_key_exists('ok', $array);
+			$updateTwoError = array_key_exists('error', $array);
+			
+			if($updateOneOk == true && $updateTwoOk == true && $updateOneError == false && $updateTwoError == false) {
 				//Auto logowanie
 				createsession($userId, $path);
 				
 				//Zmiana statusu logowania
-				changeloginstatus($path, $userSecurityDbName, $userId, 3);
+				changeloginstatus($path, $userStatisticsDbName, $userId, 3);
 				
-				header('Location: index.php');	//Przekierowanie
-				//echo '<p class="success">Zostałeś zalogowany. Możesz przejść na <a href="index.php">stronę główną</a></p>';
+				exit(header('Location: index.php'));	//Przekierowanie
+				//echo '<div class="success-box">Zostałeś zalogowany. Możesz przejść na <a href="index.php">stronę główną</a></div>';
 			}
 			else {
 				$komunikaty[] = 'Błąd przy zmianie hasła użytkownika';
 				$komunikaty[] = 'Skontaktuj się z administratorem systemu w celu uzyskania pomocy';
 				
 				?>
-				<div class="validation_error-box"><?php foreach ($komunikaty as $komunikat) { echo $komunikat."<br />"; } ?></div>
+				<div class="validation_error-box"><?php foreach ($komunikaty as $komunikat) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$komunikat."<br />"; } ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
 					swal( {
@@ -939,7 +1047,7 @@ function postChangePassword($path, $userSecurityDbName, $userDataDbName)
 
 function postEditProfile($path, $userSecurityDbName, $userDataDbName, $userData)
 {
-	if ($_POST) {
+	if($_POST) {
 		//Zczytanie danych
 		$imie = cleardata($_POST['imie']);
 		$nazwisko = cleardata($_POST['nazwisko']);
@@ -1005,7 +1113,7 @@ function postEditProfile($path, $userSecurityDbName, $userDataDbName, $userData)
 		if(!empty($errors)) {
 			//Jeśli wystąpiły jakieś błędy, to je pokaż
 			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
+			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 			<script type="text/javascript">
 			//<![CDATA[
 				swal( {
@@ -1036,7 +1144,7 @@ function postEditProfile($path, $userSecurityDbName, $userDataDbName, $userData)
 			
 			//Tworzenie pustych dokumentów
 			$userDocument = array();
-			$document = array();
+			$securityDocument = array();
 			
 			//Zapisywanie dokumentów
 			if(!empty($imie)) {
@@ -1106,15 +1214,15 @@ function postEditProfile($path, $userSecurityDbName, $userDataDbName, $userData)
 				$mKey = mkeyhash($userId, $imie, $nazwisko, $dataUrodzenia, $rejestracjaData, $rejestracjaCzas);
 				
 				$userDocument['mail'] = $email;
-				$document['typ'] = 'niepotwierdzony';
-				$document['mkey'] = $mKey;
+				$securityDocument['typ'] = 'niepotwierdzony';
+				$securityDocument['mkey'] = $mKey;
 			}
 			if(!empty($password)) {
 				$logout = true;
 				
 				$password = password_hash($password, PASSWORD_BCRYPT);	//hashowanie (solenie) hasła
 				
-				$document['password'] = $password;
+				$securityDocument['password'] = $password;
 			}
 			
 			//Dokument z informacjami o użytkowniku
@@ -1130,9 +1238,9 @@ function postEditProfile($path, $userSecurityDbName, $userDataDbName, $userData)
 			}
 			
 			//Dokument z wrażliwymi informacjami o użytkowniku
-			if(!empty($document)) {
+			if(!empty($securityDocument)) {
 				//Zapis dokumentu z wrażliwymi informacjami o użytkowniku do bazy danych
-				$response = updatedocument($path, $userSecurityDbName, $userId, $document);
+				$response = updatedocument($path, $userSecurityDbName, $userId, $securityDocument);
 				
 				$result = string_to_array($response[1], true);
 				$array = $result[0];
@@ -1145,7 +1253,7 @@ function postEditProfile($path, $userSecurityDbName, $userDataDbName, $userData)
 				$error = "Wystąpił błąd podczas aktualizacji danych użytkownika";
 				
 				?>
-				<div class="error-box"><?php echo $error; ?></div>
+				<div class="error-box"><?php echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error; ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
 					swal( {
@@ -1304,12 +1412,12 @@ function postEditProfile($path, $userSecurityDbName, $userDataDbName, $userData)
 					
 					if($typKomunikatu == 'success') {
 						?>
-						<div class="validation_success-box"><?php foreach ($komunikaty as $komunikat) { echo $komunikat."<br />"; } ?></div>
+						<div class="validation_success-box"><?php foreach ($komunikaty as $komunikat) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$komunikat."<br />"; } ?></div>
 						<?php
 					}
 					else if($typKomunikatu == 'error') {
 						?>
-						<div class="validation_error-box"><?php foreach ($komunikaty as $komunikat) { echo $komunikat."<br />"; } ?></div>
+						<div class="validation_error-box"><?php foreach ($komunikaty as $komunikat) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$komunikat."<br />"; } ?></div>
 						<?php
 					}
 					?>
@@ -1337,7 +1445,7 @@ function postEditProfile($path, $userSecurityDbName, $userDataDbName, $userData)
 				}
 				else {
 					?>
-					<div class="validation_success-box"><?php foreach ($komunikaty as $komunikat) { echo $komunikat."<br />"; } ?></div>
+					<div class="validation_success-box"><?php foreach ($komunikaty as $komunikat) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$komunikat."<br />"; } ?></div>
 					<script type="text/javascript">
 					//<![CDATA[
 						swal( {
@@ -1361,89 +1469,163 @@ function postEditProfile($path, $userSecurityDbName, $userDataDbName, $userData)
 	}
 }
 
-function postAddRoom($path, $roomDbName)
+function postAddFacebookAccount($path, $userStatisticsDbName, $userData, $facebookAccountDbName)
 {
-	if ($_POST) {
+	if($_POST) {
+		echo "<br /><br /><br /><br /><br />";    //test
+		echo "TEST<br />";    //test
+		
+		//Liczba kroków dla paska postępu
+		$pasekLiczbaKrokow = 8;
+		
+		//Pasek postępu
+		?>
+		<div class="register_account_loading" style="width: 100%; position: absolute; top: 140px; left: 0px; z-index: 100;">
+			<div class="container body-content">
+				<div class="jumbotron" style="padding-top: 170px; padding-bottom: 170px;">
+					<div class="progress">
+						<div class="progress-bar progress-bar-striped progress-bar-animated" id="register_account_loading_bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<script type="text/javascript">
+		//<![CDATA[
+			function showProgressBar() {
+				$(".register_account_loading").show();
+			}
+			
+			function changeProgressBar() {
+				var pasekLiczbaKrokow = Number('<?php echo $pasekLiczbaKrokow; ?>');
+				var element = document.getElementById('register_account_loading_bar');
+				var postepObecny = Number(element.getAttribute("aria-valuenow"));
+				
+				var krok = 100 / pasekLiczbaKrokow;
+				var postepNowy = postepObecny + krok;
+				var procent = postepNowy + "%";
+				
+				element.setAttribute("aria-valuenow", postepNowy);
+				element.setAttribute("style", "width: " + procent + ";");
+			}
+			
+			function hideProgressBar() {
+				$(".register_account_loading").hide();
+			}
+			
+			showProgressBar();
+			changeProgressBar();
+		 //]]>
+		</script>
+		<?php
+		
 		//Zczytanie danych
-		$nazwa = cleardata($_POST['nazwa']);
-		$typ = cleardata($_POST['typ']);
-		$pojemnosc = cleardata($_POST['pojemnosc']);
-		$dlugosc = cleardata($_POST['dlugosc']);
-		$szerokosc = cleardata($_POST['szerokosc']);
-		$wysokosc = cleardata($_POST['wysokosc']);
-		$tablica = cleardata($_POST['tablica']);
-		$flipchart = cleardata($_POST['flipchart']);
-		$projektor = cleardata($_POST['projektor']);
-		$glosniki = !isset($_REQUEST['glosniki']) ? "" : cleardata($_REQUEST['glosniki']);
-		$mikrofony = !isset($_REQUEST['mikrofony']) ? "" : cleardata($_REQUEST['mikrofony']);
-		$przewodowy = !isset($_REQUEST['przewodowy']) ? "" : cleardata($_REQUEST['przewodowy']);
-		$bezprzewodowy = !isset($_REQUEST['bezprzewodowy']) ? "" : cleardata($_REQUEST['bezprzewodowy']);
+		$tytul = !isset($_REQUEST['tytul']) ? "" : cleardata($_REQUEST['tytul']);
+		$imie = cleardata($_POST['imie']);
+		$nazwisko = cleardata($_POST['nazwisko']);
+		$nazwiskoPanienskie = cleardata($_POST['nazwisko_panienskie']);
+		$plec = cleardata($_POST['plec']);
+		$dataUrodzenia = cleardata($_POST['data_urodzenia']);
 		$kraj = cleardata($_POST['kraj']);
-		$wojewodztwo = cleardata($_POST['wojewodztwo']);
 		$miasto = cleardata($_POST['miasto']);
 		$ulica = cleardata($_POST['ulica']);
+		$numerDomu = cleardata($_POST['numer_domu']);
 		$poczta = cleardata($_POST['poczta']);
+		$firma = cleardata($_POST['firma']);
+		$wzrost = cleardata($_POST['wzrost']);
+		$waga = cleardata($_POST['waga']);
+		$wlosy = cleardata($_POST['wlosy']);
+		$oczy = cleardata($_POST['oczy']);
+		$krew = cleardata($_POST['krew']);
+		$sport = cleardata($_POST['sport']);
+		$kolor = cleardata($_POST['kolor']);
+		$szerokoscGeograficzna = cleardata($_POST['szerokosc_geograficzna']);
+		$dlugoscGeograficzna = cleardata($_POST['dlugosc_geograficzna']);
+		$telefonKomorkowy = cleardata($_POST['telefon_komorkowy']);
+		$telefonStacjonarny = cleardata($_POST['telefon_stacjonarny']);
+		$email = cleardata($_POST['email']);
+		$login = cleardata($_POST['login']);
+		$password = cleardata($_POST['password'], false);
+		$passwordVerify = cleardata($_POST['password_v'], false);
 		$zdjecie = cleardata($_POST['zdjecie']);
 		$sciezka = cleardata($_POST['sciezka']);
-		$rok = cleardata($_POST['rok']);
-		$miesiac = cleardata($_POST['miesiac']);
-		$dzien = cleardata($_POST['dzien']);
-		$godzina = cleardata($_POST['godzina']);
-		$minuta = cleardata($_POST['minuta']);
-		$sekunda = cleardata($_POST['sekunda']);
+		$uuid = cleardata($_POST['uuid']);
+		$dataUrl = cleardata($_POST['data_url']);
+		$emailUrl = cleardata($_POST['email_url']);
+		$rejestracjaRok = cleardata($_POST['rok']);
+		$rejestracjaMiesiac = cleardata($_POST['miesiac']);
+		$rejestracjaDzien = cleardata($_POST['dzien']);
+		$rejestracjaGodzina = cleardata($_POST['godzina']);
+		$rejestracjaMinuta = cleardata($_POST['minuta']);
+		$rejestracjaSekunda = cleardata($_POST['sekunda']);
 		
 		//Tablica błędów
 		$errors = array();
 		
+		//Data urodzenia
+		$dataUrodzeniaRok = substr($dataUrodzenia, 0, 4);
+		$dataUrodzeniaMiesiac = substr($dataUrodzenia, 5, 2);
+		$dataUrodzeniaDzien = substr($dataUrodzenia, 8, 2);
+		
+		//Data rejestracji
+		$rejestracjaData = (int)$rejestracjaRok."-".(int)$rejestracjaMiesiac."-".(int)$rejestracjaDzien;
+		$rejestracjaCzas = (int)$rejestracjaGodzina.":".(int)$rejestracjaMinuta.":".(int)$rejestracjaSekunda;
+		
 		//Podstawowa walidacja formularza
-		if(empty($nazwa) || empty($typ) || empty($pojemnosc) || empty($dlugosc) ||
-		   empty($szerokosc) || empty($wysokosc) || empty($kraj) || empty($wojewodztwo) ||
-		   empty($miasto) || empty($ulica) || empty($poczta) || empty($zdjecie) ||
-		   empty($sciezka) || empty($rok) || empty($miesiac) || empty($dzien) ||
-		   empty($godzina) || empty($minuta) || empty($sekunda)) {
+		if(empty($imie) || empty($nazwisko) || empty($nazwiskoPanienskie) || empty($plec) ||
+		   empty($dataUrodzeniaRok) || empty($dataUrodzeniaMiesiac) || empty($dataUrodzeniaDzien) || empty($kraj) ||
+		   empty($miasto) || empty($ulica) || empty($numerDomu) || empty($poczta) ||
+		   empty($wzrost) || empty($waga) || empty($wlosy) || empty($oczy) ||
+		   empty($krew) || empty($sport) || empty($kolor) || empty($szerokoscGeograficzna) ||
+		   empty($dlugoscGeograficzna) || empty($telefonKomorkowy) || empty($email) || empty($login) ||
+		   empty($password) || empty($passwordVerify) || empty($uuid) || empty($dataUrl) ||
+		   empty($emailUrl) || empty($rejestracjaRok) || empty($rejestracjaMiesiac) || empty($rejestracjaDzien) ||
+		   ($rejestracjaGodzina == null) || ($rejestracjaMinuta == null) || ($rejestracjaSekunda == null)) {
 			$errors[] = 'Proszę wypełnić wszystkie pola';
 		}
 		
-		if(!empty($tablica)) {
-			//Sprawdź czy podana przez użytkownika ilość tablic nie jest za mała
-			if($tablica < 0) {
-				$errors[] = 'Podana ilość tablic jest ujemna';
-			}
-			
-			//Sprawdź czy podana przez użytkownika ilość tablic nie jest za duża
-			if($tablica > 100) {
-				$errors[] = 'Podany ilość tablic jest za duża';
-			}
+		//Pasek postępu
+		?>
+		<script type="text/javascript">
+		//<![CDATA[
+			changeProgressBar();
+		 //]]>
+		</script>
+		<?php
+		
+		//Sprawdź czy użytkownik jest pełnoletni
+		$lata = $rejestracjaRok - $dataUrodzeniaRok;
+		$miesiace = $rejestracjaMiesiac - $dataUrodzeniaMiesiac;
+		$dni = $rejestracjaDzien - $dataUrodzeniaDzien;
+		$wiek = $lata + ($miesiace / 12) + ($dni / 365);
+		if($wiek < 18) {
+			$errors[] = 'Użytkownik jest niepełnoletni';
 		}
 		
-		if(!empty($flipchart)) {
-			//Sprawdź czy podana przez użytkownika ilość flipchartów nie jest za mała
-			if($flipchart < 0) {
-				$errors[] = 'Podana ilość flipchartów jest ujemna';
-			}
-			
-			//Sprawdź czy podana przez użytkownika ilość flipchartów nie jest za duża
-			if($flipchart > 100) {
-				$errors[] = 'Podany ilość flipchartów jest za duża';
-			}
+		//Sprawdź czy podany przez użytkownika adres e-mail jest poprawny
+		if(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			$errors[] = 'Podany adres e-mail jest niepoprawny';
 		}
 		
-		if(!empty($projektor)) {
-			//Sprawdź czy podana przez użytkownika ilość projektorów nie jest za mała
-			if($projektor < 0) {
-				$errors[] = 'Podana ilość projektorów jest ujemna';
-			}
-			
-			//Sprawdź czy podana przez użytkownika ilość projektorów nie jest za duża
-			if($projektor > 100) {
-				$errors[] = 'Podany ilość projektorów jest za duża';
-			}
+		//Sprawdź czy podane przez użytkownika adres e-mail lub login nie są zajęte
+		$checkEmail = checkbusy($path, $facebookAccountDbName, array("mail", "email"), $email);
+		$checkLogin = checkbusy($path, $facebookAccountDbName, array("logowanie", "login"), $login);
+		
+		if($checkEmail > 0) {
+			//$errors[] = 'Podany adres e-mail jest już używany';
+		}
+		if($checkLogin > 0) {
+			//$errors[] = 'Podany login jest już zajęty';
+		}
+		
+		if($password != $passwordVerify) {
+			$errors[] = 'Podane hasła się nie zgadzają';
 		}
 		
 		if(!empty($errors)) {
 			//Jeśli wystąpiły jakieś błędy, to je pokaż
 			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
+			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 			<script type="text/javascript">
 			//<![CDATA[
 				swal( {
@@ -1464,8 +1646,17 @@ function postAddRoom($path, $roomDbName)
 			<?php
 		}
 		else {
+			//Pasek postępu
+			?>
+			<script type="text/javascript">
+			//<![CDATA[
+				changeProgressBar();
+			 //]]>
+			</script>
+			<?php
+			
 			//Jeżeli nie ma błędów to przechodzimy dalej
-			$responseList = listofdocument($path, $roomDbName);	//Wyznaczanie nowego ID dokumentu
+			$responseList = listofdocument($path, $facebookAccountDbName);	//Wyznaczanie nowego ID dokumentu
 			
 			$resultList = string_to_array($responseList, true);
 			$arrayList = $resultList[0];
@@ -1474,70 +1665,72 @@ function postAddRoom($path, $roomDbName)
 			$ileMax = 0;
 			for($i=0; $i<$ile; $i++) {
 				$name = $arrayList['rows'][$i]['id'];
-				$numer = substr($name, 4);
+				$numer = substr($name, 5);
 				$ileMax = max($ileMax, $numer);
 			}
 			
-			$documentId = 'sala'.($ileMax + 1);
+			$documentId = 'konto'.($ileMax + 1);
 			
-			//Tworzenie pustego dokumentu
-			$wyposazenie = array();
-			
-			//Zapisywanie dokumentu
-			if($tablica > 0) {
-				$wyposazenie['tablica'] = (int)$tablica;
-			}
-			if($flipchart > 0) {
-				$wyposazenie['flipchart'] = (int)$flipchart;
-			}
-			if($projektor > 0) {
-				$wyposazenie['projektor'] = (int)$projektor;
-			}
-			if($glosniki == "głośniki" && $mikrofony == "mikrofony") {
-				$wyposazenie['naglosnienie'] = "glosniki i mikrofony";
-			}
-			else if($glosniki == "głośniki" && $mikrofony == "") {
-				$wyposazenie['naglosnienie'] = "glosniki";
-			}
-			else if($glosniki == "" && $mikrofony == "mikrofony") {
-				$wyposazenie['naglosnienie'] = "mikrofony";
-			}
-			if($przewodowy == "przewodowy" && $bezprzewodowy == "bezprzewodowy") {
-				$wyposazenie['internet'] = "przewodowy i bezprzewodowy";
-			}
-			else if($przewodowy == "przewodowy" && $bezprzewodowy == "") {
-				$wyposazenie['internet'] = "przewodowy";
-			}
-			else if($przewodowy == "" && $bezprzewodowy == "bezprzewodowy") {
-				$wyposazenie['internet'] = "bezprzewodowy";
-			}
+			$accountId = "";
 			
 			//Tworzenie nowego dokumentu
-			$document = array(
+			$accountDocument = array(
 				'_id' => $documentId,
-				'nazwa' => $nazwa,
-				'typ' => $typ,
-				'pojemnosc' => (int)$pojemnosc,
-				'wymiary' => array(
-					'dlugosc' => (float)$dlugosc,
-					'szerokosc' => (float)$szerokosc,
-					'wysokosc' => (float)$wysokosc
+				'uuid' => $uuid,
+				'tytul' => $tytul,
+				'imie' => $imie,
+				'nazwisko' => $nazwisko,
+				'nazwisko_panienskie' => $nazwiskoPanienskie,
+				'plec' => $plec,
+				'data_urodzenia' => array(
+					'data_urodzenia_rok' => (int)$dataUrodzeniaRok,
+					'data_urodzenia_miesiac' => (int)$dataUrodzeniaMiesiac,
+					'data_urodzenia_dzien' => (int)$dataUrodzeniaDzien
 				),
-				'wyposazenie' => $wyposazenie,
 				'adres' => array(
 					'kraj' => $kraj,
-					'wojewodztwo' => $wojewodztwo,
 					'miasto' => $miasto,
 					'ulica' => $ulica,
+					'numer_domu' => $numerDomu,
 					'poczta' => $poczta
 				),
+				'firma' => $firma,
+				'wzrost' => $wzrost,
+				'waga' => $waga,
+				'wlosy' => $wlosy,
+				'oczy' => $oczy,
+				'krew' => $krew,
+				'sport' => $sport,
+				'kolor' => $kolor,
+				'telefon' => array(
+					'telefon_komorkowy' => $telefonKomorkowy,
+					'telefon_stacjonarny' => $telefonStacjonarny
+				),
+				'mail' => array(
+					'email' => $email,
+					'email_url' => $emailUrl
+				),
+				'logowanie' => array(
+					'id' => $accountId,
+					'login' => $login,
+					'password' => $password,
+					'typ' => 'niepotwierdzony'
+				),
+				'statystyki' => array(
+					'status' => 'utworzone',
+					'ilosc_uzyc' => 0
+				),
+				'geolocation_data' => array(
+					'szerokosc_geograficzna' => $szerokoscGeograficzna,
+					'dlugosc_geograficzna' => $dlugoscGeograficzna
+				),
 				'rejestracja' => array(
-					'rok' => (int)$rok,
-					'miesiac' => (int)$miesiac,
-					'dzien' => (int)$dzien,
-					'godzina' => (int)$godzina,
-					'minuta' => (int)$minuta,
-					'sekunda' => (int)$sekunda
+					'rejestracja_rok' => (int)$rejestracjaRok,
+					'rejestracja_miesiac' => (int)$rejestracjaMiesiac,
+					'rejestracja_dzien' => (int)$rejestracjaDzien,
+					'rejestracja_godzina' => (int)$rejestracjaGodzina,
+					'rejestracja_minuta' => (int)$rejestracjaMinuta,
+					'rejestracja_sekunda' => (int)$rejestracjaSekunda
 				)
 			);
 			
@@ -1546,378 +1739,7 @@ function postAddRoom($path, $roomDbName)
 			$sciezka = str_replace('\\', '/', $sciezka);
 			$sciezka = str_replace('//', '/', $sciezka);
 			
-			if($sciezka != 'C:/fakepath/'.$zdjecie) {
-				$poz = strripos($sciezka, '/');
-				
-				$repository = substr($sciezka, 0, $poz+1);
-				$attachment = substr($sciezka, $poz+1);
-			}
-			else {
-				$repository = 'C:/';
-				$attachment = $zdjecie;
-			}
-			
-			//Zapis nowego dokumentu z informacjami o sali do bazy danych
-			$response = createdocument($path, $roomDbName, $document);
-			
-			$result = string_to_array($response, true);
-			$array = $result[0];
-			$createOne = array_key_exists('error', $array);
-			
-			//Zapis załącznika o sali do bazy danych
-			$response = createdocumentwithattachment($path, $roomDbName, $documentId, $repository, $attachment);
-			
-			$result = string_to_array($response, true);
-			$array = $result[0];
-			$createTwo = array_key_exists('error', $array);
-			
-			if($createOne == true || $createTwo == true) {
-				$error = "Wystąpił błąd przy rejestrowaniu sali";
-				
-				?>
-				<div class="error-box"><?php echo $error; ?></div>
-				<script type="text/javascript">
-				//<![CDATA[
-					swal( {
-							title: 'Uwaga',
-							text: '<?php echo $error; ?>\n',
-							type: 'error',
-							confirmButtonColor: '#DD6B55',
-							closeOnConfirm: false
-						},
-						function(isConfirm) {
-							if(isConfirm) {
-								history.back();
-							}
-						}
-					);
-					//]]>
-				</script>
-				<?php
-			}
-			else {
-				$komunikat = 'Sala o nazwie '.$nazwa.' została poprawnie zarejestrowany';
-				
-				?>
-				<div class="success-box"><?php echo $komunikat; ?></div>
-				<script type="text/javascript">
-				//<![CDATA[
-					swal( {
-							title: null,
-							text: '<?php echo $komunikat; ?>\n',
-							type: 'success',
-							timer: 5000,
-							showConfirmButton: false,
-							html: true
-						},
-						function() {
-							window.location.href = 'index.php?id=dodajsale';
-						}
-					);
-					//]]>
-				</script>
-				<?php
-			}
-		}
-	}
-}
-
-function postEditRoom($path, $roomDbName)
-{
-	if ($_POST) {
-		//Zczytanie danych
-		$s = cleardata($_POST['s']);
-		$nazwa = cleardata($_POST['nazwa']);
-		$typ = cleardata($_POST['typ']);
-		$pojemnosc = cleardata($_POST['pojemnosc']);
-		$dlugosc = cleardata($_POST['dlugosc']);
-		$szerokosc = cleardata($_POST['szerokosc']);
-		$wysokosc = cleardata($_POST['wysokosc']);
-		$tablica = !isset($_REQUEST['tablica']) ? 0 : cleardata($_REQUEST['tablica']);
-		$flipchart = !isset($_REQUEST['flipchart']) ? 0 : cleardata($_REQUEST['flipchart']);
-		$projektor = !isset($_REQUEST['projektor']) ? 0 : cleardata($_REQUEST['projektor']);
-		$glosniki = !isset($_REQUEST['glosniki']) ? "" : cleardata($_REQUEST['glosniki']);
-		$mikrofony = !isset($_REQUEST['mikrofony']) ? "" : cleardata($_REQUEST['mikrofony']);
-		$przewodowy = !isset($_REQUEST['przewodowy']) ? "" : cleardata($_REQUEST['przewodowy']);
-		$bezprzewodowy = !isset($_REQUEST['bezprzewodowy']) ? "" : cleardata($_REQUEST['bezprzewodowy']);
-		$kraj = cleardata($_POST['kraj']);
-		$wojewodztwo = cleardata($_POST['wojewodztwo']);
-		$miasto = cleardata($_POST['miasto']);
-		$ulica = cleardata($_POST['ulica']);
-		$poczta = cleardata($_POST['poczta']);
-		$zdjecie = cleardata($_POST['zdjecie']);
-		$sciezka = cleardata($_POST['sciezka']);
-		
-		//Tablica błędów
-		$errors = array();
-		
-		//Podstawowa walidacja formularza
-		if(empty($nazwa) && empty($typ) && empty($pojemnosc) && empty($dlugosc) &&
-		   empty($szerokosc) && empty($wysokosc) && ($tablica == "") && ($flipchart == "") &&
-		   ($projektor == "") && empty($glosniki) && empty($mikrofony) && empty($przewodowy) &&
-		   empty($bezprzewodowy) && empty($kraj) && empty($wojewodztwo) && empty($miasto) &&
-		   empty($ulica) && empty($poczta) && empty($zdjecie) && empty($sciezka)) {
-			$errors[] = 'Należy podać dane do edycji';
-		}
-		
-		//Sprawdzenie przekierowania sali
-		if(isset($_REQUEST['s'])) {
-			$s = $_REQUEST['s'];
-			
-			//Nazwa dokumentu
-			$documentId = 'sala'.$s;
-			
-			//Upewnij się, że sala istnieje
-			if(!checkid($path, $roomDbName, $documentId)) {
-				$errors[] = 'Przykro nam, ale sala o podanym identyfikatorze nie istnieje';
-			}
-			
-			//Pobierz dane o sali
-			$roomData = data($path, $roomDbName, $documentId);
-		}
-		else {
-			$errors[] = 'Niewłaściwy adres';
-		}
-		
-		if(!empty($tablica)) {
-			//Sprawdź czy podana przez użytkownika ilość tablic nie jest za mała
-			if($tablica < 0) {
-				$errors[] = 'Podana ilość tablic jest ujemna';
-			}
-			
-			//Sprawdź czy podana przez użytkownika ilość tablic nie jest za duża
-			if($tablica > 100) {
-				$errors[] = 'Podany ilość tablic jest za duża';
-			}
-		}
-		
-		if(!empty($flipchart)) {
-			//Sprawdź czy podana przez użytkownika ilość flipchartów nie jest za mała
-			if($flipchart < 0) {
-				$errors[] = 'Podana ilość flipchartów jest ujemna';
-			}
-			
-			//Sprawdź czy podana przez użytkownika ilość flipchartów nie jest za duża
-			if($flipchart > 100) {
-				$errors[] = 'Podany ilość flipchartów jest za duża';
-			}
-		}
-		
-		if(!empty($projektor)) {
-			//Sprawdź czy podana przez użytkownika ilość projektorów nie jest za mała
-			if($projektor < 0) {
-				$errors[] = 'Podana ilość projektorów jest ujemna';
-			}
-			
-			//Sprawdź czy podana przez użytkownika ilość projektorów nie jest za duża
-			if($projektor > 100) {
-				$errors[] = 'Podany ilość projektorów jest za duża';
-			}
-		}
-		
-		if(!empty($errors)) {
-			//Jeśli wystąpiły jakieś błędy, to je pokaż
-			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
-			<script type="text/javascript">
-			//<![CDATA[
-				swal( {
-						title: 'Uwaga',
-						text: '<?php foreach ($errors as $error) { echo $error; ?>\n<?php } ?>',
-						type: 'warning',
-						confirmButtonColor: '#DD6B55',
-						closeOnConfirm: false
-					},
-					function(isConfirm) {
-						if(isConfirm) {
-							history.back();
-						}
-					}
-				);
-				//]]>
-			</script>
-			<?php
-		}
-		else {
-			//Jeżeli nie ma błędów to przechodzimy dalej
-			$zmiana = false;
-			$dane = false;
-			$zalacznik = false;
-			
-			$updateOneOk = false;
-			$updateOneError = false;
-			$updateTwoOk = false;
-			$updateTwoError = false;
-			
-			//Tworzenie pustych dokumentów
-			$wyposazenie = Null;
-			$document = array();
-			
-			//Sprawdzanie wyposażenia
-			$tablicaObecna = !isset($roomData['wyposazenie']['tablica']) ? 0 : $roomData['wyposazenie']['tablica'];
-			$flipchartObecna = !isset($roomData['wyposazenie']['flipchart']) ? 0 : $roomData['wyposazenie']['flipchart'];
-			$projektorObecna = !isset($roomData['wyposazenie']['projektor']) ? 0 : $roomData['wyposazenie']['projektor'];
-			$naglosnienieObecna = !isset($roomData['wyposazenie']['naglosnienie']) ? "" : $roomData['wyposazenie']['naglosnienie'];
-			$internetObecna = !isset($roomData['wyposazenie']['internet']) ? "" : $roomData['wyposazenie']['internet'];
-			switch ($naglosnienieObecna) {
-				case "glosniki i mikrofony":
-					$glosnikiObecna = 'głośniki';
-					$mikrofonyObecna = 'mikrofony';
-					break;
-				case "glosniki":
-					$glosnikiObecna = 'głośniki';
-					$mikrofonyObecna = '';
-					break;
-				case "mikrofony":
-					$glosnikiObecna = '';
-					$mikrofonyObecna = 'mikrofony';
-					break;
-				default:
-					$glosnikiObecna = '';
-					$mikrofonyObecna = '';
-					break;
-			}
-			switch ($internetObecna) {
-				case "przewodowy i bezprzewodowy":
-					$przewodowyObecna = 'przewodowy';
-					$bezprzewodowyObecna = 'bezprzewodowy';
-					break;
-				case "przewodowy":
-					$przewodowyObecna = 'przewodowy';
-					$bezprzewodowyObecna = '';
-					break;
-				case "bezprzewodowy":
-					$przewodowyObecna = '';
-					$bezprzewodowyObecna = 'bezprzewodowy';
-					break;
-				default:
-					$przewodowyObecna = '';
-					$bezprzewodowyObecna = '';
-					break;
-			}
-			
-			//Zapisywanie dokumentu z wyposażeniem
-			if(($tablica != $tablicaObecna) || ($flipchart != $flipchartObecna) || ($projektor != $projektorObecna) ||
-			   ($glosniki != $glosnikiObecna) || ($mikrofony != $mikrofonyObecna) || ($przewodowy != $przewodowyObecna) ||
-			   ($bezprzewodowy != $bezprzewodowyObecna)) {
-				if($tablica > 0) {
-					$wyposazenie['tablica'] = (int)$tablica;
-				}
-				if($flipchart > 0) {
-					$wyposazenie['flipchart'] = (int)$flipchart;
-				}
-				if($projektor > 0) {
-					$wyposazenie['projektor'] = (int)$projektor;
-				}
-				if($glosniki == "głośniki" && $mikrofony == "mikrofony") {
-					$wyposazenie['naglosnienie'] = "glosniki i mikrofony";
-				}
-				else if($glosniki == "głośniki" && $mikrofony == "") {
-					$wyposazenie['naglosnienie'] = "glosniki";
-				}
-				else if($glosniki == "" && $mikrofony == "mikrofony") {
-					$wyposazenie['naglosnienie'] = "mikrofony";
-				}
-				if($przewodowy == "przewodowy" && $bezprzewodowy == "bezprzewodowy") {
-					$wyposazenie['internet'] = "przewodowy i bezprzewodowy";
-				}
-				else if($przewodowy == "przewodowy" && $bezprzewodowy == "") {
-					$wyposazenie['internet'] = "przewodowy";
-				}
-				else if($przewodowy == "" && $bezprzewodowy == "bezprzewodowy") {
-					$wyposazenie['internet'] = "bezprzewodowy";
-				}
-				
-				$zmiana = true;
-			}
-			
-			//Zapisywanie dokumentu
-			if(!empty($nazwa)) {
-				$document['nazwa'] = $nazwa;
-			}
-			else {
-				//Pobieranie nazwy
-				$nazwa = $roomData['nazwa'];
-			}
-			if(!empty($typ)) {
-				$document['typ'] = $typ;
-			}
-			else {
-				//Pobieranie typu
-				$typ = $roomData['typ'];
-			}
-			if(!empty($pojemnosc)) {
-				$document['pojemnosc'] = (int)$pojemnosc;
-			}
-			else {
-				//Pobieranie liczby miejsc
-				$pojemnosc = $roomData['pojemnosc'];
-			}
-			if((!empty($dlugosc)) || (!empty($szerokosc)) || (!empty($wysokosc))) {
-				if(!empty($dlugosc)) {
-					$document['wymiary']['dlugosc'] = (float)$dlugosc;
-				}
-				else {
-					$document['wymiary']['dlugosc'] = $roomData['wymiary']['dlugosc'];
-				}
-				if(!empty($szerokosc)) {
-					$document['wymiary']['szerokosc'] = (float)$szerokosc;
-				}
-				else {
-					$document['wymiary']['szerokosc'] = $roomData['wymiary']['szerokosc'];
-				}
-				if(!empty($wysokosc)) {
-					$document['wymiary']['wysokosc'] = (float)$wysokosc;
-				}
-				else {
-					$document['wymiary']['wysokosc'] = $roomData['wymiary']['wysokosc'];
-				}
-			}
-			if($zmiana) {
-				$document['wyposazenie'] = $wyposazenie;
-			}
-			if((!empty($kraj)) || (!empty($wojewodztwo)) || (!empty($miasto)) || (!empty($ulica)) || (!empty($poczta))) {
-				if(!empty($kraj)) {
-					$document['adres']['kraj'] = $kraj;
-				}
-				else {
-					$document['adres']['kraj'] = $roomData['adres']['kraj'];
-				}
-				if(!empty($wojewodztwo)) {
-					$document['adres']['wojewodztwo'] = $wojewodztwo;
-				}
-				else {
-					$document['adres']['wojewodztwo'] = $roomData['adres']['wojewodztwo'];
-				}
-				if(!empty($miasto)) {
-					$document['adres']['miasto'] = $miasto;
-				}
-				else {
-					$document['adres']['miasto'] = $roomData['adres']['miasto'];
-				}
-				if(!empty($ulica)) {
-					$document['adres']['ulica'] = $ulica;
-				}
-				else {
-					$document['adres']['ulica'] = $roomData['adres']['ulica'];
-				}
-				if(!empty($poczta)) {
-					$document['adres']['poczta'] = $poczta;
-				}
-				else {
-					$document['adres']['poczta'] = $roomData['adres']['poczta'];
-				}
-			}
-			if($document != Null) {
-				$dane = true;
-			}
-			
-			if((!empty($zdjecie)) && (!empty($sciezka))) {
-				//Zmiana ukośników ze ścieżki
-				$sciezka = str_replace('^\\', '/', $sciezka);
-				$sciezka = str_replace('\\', '/', $sciezka);
-				$sciezka = str_replace('//', '/', $sciezka);
-				
+			if(!empty($sciezka) && !empty($zdjecie)) {
 				if($sciezka != 'C:/fakepath/'.$zdjecie) {
 					$poz = strripos($sciezka, '/');
 					
@@ -1928,51 +1750,48 @@ function postEditRoom($path, $roomDbName)
 					$repository = 'C:/';
 					$attachment = $zdjecie;
 				}
-				
-				$zalacznik = true;
+			}
+			else {
+				$repository = null;
+				$attachment = null;
 			}
 			
-			//Dokument z informacjami o sali
-			if($dane) {
-				//Zapis dokumentu z informacjami o sali do bazy danych
-				$response = updatedocument($path, $roomDbName, $documentId, $document);
-				
-				$result = string_to_array($response[1], true);
-				$array = $result[0];
-				
-				$updateOneOk = array_key_exists('ok', $array);
-				$updateOneError = array_key_exists('error', $array);
-			}
+			//Pasek postępu
+			?>
+			<script type="text/javascript">
+			//<![CDATA[
+				changeProgressBar();
+			 //]]>
+			</script>
+			<?php
 			
-			//Załącznik do dokumentu z informacjami o sali
-			if($zalacznik) {
-				//Zapis załącznika o sali do bazy danych
-				$response = createdocumentwithattachment($path, $roomDbName, $documentId, $repository, $attachment);
+			//Zapis nowego dokumentu z informacjami o koncie na facebook-u do bazy danych
+			/*$response = createdocument($path, $facebookAccountDbName, $accountDocument);
+			
+			$result = string_to_array($response, true);
+			$array = $result[0];
+			$createOne = array_key_exists('error', $array);
+			*/
+			$createOne = false;		//test
+			
+			//Zapis załącznika o koncie na facebook-u do bazy danych
+			if(($repository != null) && ($attachment != null)) {
+				//$response = createdocumentwithattachment($path, $facebookAccountDbName, $documentId, $repository, $attachment);
 				
 				$result = string_to_array($response, true);
 				$array = $result[0];
-				
-				$updateTwoOk = array_key_exists('ok', $array);
-				$updateTwoError = array_key_exists('error', $array);
+				$createTwo = array_key_exists('error', $array);
+			}
+			else {
+				$createTwo = false;
 			}
 			
-			//Sprawdzanie czy dane lub załącznik zostały zmienione
-			if($dane || $zalacznik) {
-				$updateOneOk = true;
-				$updateOneError = false;
-				$updateTwoOk = true;
-				$updateTwoError = false;
-			}
-			
-			if(($document == Null && !$zalacznik) || ($updateOneOk == false && $updateTwoOk == false) || ($updateOneError == true || $updateTwoError == true)) {
-				$errors[] = "Wystąpił błąd podczas aktualizacji danych sali";
-				
-				if(!$dane && !$zalacznik) {
-					$errors[] = "Nie podano żadnych danych do zmiany";
-				}
+			if($createOne == true || $createTwo == true) {
+				$errors[] = 'Wystąpił błąd przy rejestrowaniu konta użytkownika';
+				$errors[] = 'Błąd przy zapisie nowego konta do bazy danych';
 				
 				?>
-				<div class="validation_error-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
+				<div class="validation_error-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
 					swal( {
@@ -1993,84 +1812,236 @@ function postEditRoom($path, $roomDbName)
 				<?php
 			}
 			else {
-				$komunikat = 'Dane sali o nazwie <b>'.$nazwa.'</b> zostały poprawnie zmienione';
-				
-				$adres = '';
+				//Pasek postępu
 				?>
-				<div class="success-box"><?php echo $komunikat; ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
-					var s = '<?php echo $s; ?>';
-					
-					var adres = 'index.php?id=edytujsale&s=' + s;
-					
-					swal( {
-							title: null,
-							text: '<?php echo $komunikat; ?>\n',
-							type: 'success',
-							timer: 5000,
-							showConfirmButton: false,
-							html: true
-						},
-						function() {
-							window.location.href = adres;
-						}
-					);
-					//]]>
+					changeProgressBar();
+				 //]]>
 				</script>
 				<?php
+				
+				//Dodanie funkcji facebook-a
+				require 'facebook/datafun.php';
+				
+				echo "dataUrl = ".$dataUrl."<br />";	//test
+				echo "password = ".$password."<br />";	//test
+				echo "emailUrl = ".$emailUrl."<br />";	//test
+				$registerData = registerFacebookAccount($path, $userStatisticsDbName, $userData['_id'], $imie, $nazwisko, $plec, $dataUrodzeniaRok, $dataUrodzeniaMiesiac, $dataUrodzeniaDzien, $telefonKomorkowy, $email, $login, $password);
+				//echo "registerData = ".serialize($registerData)."<br />";	//test
+				//$registerData = json_decode($registerData);	//test
+				foreach($registerData as $key => $value) {
+					echo $key." => ".$value."<br />";	//test
+				}
+				$registerStatus = $registerData[0];
+				$registerStatus = true;		//test
+				
+				//Pasek postępu
+				?>
+				<script type="text/javascript">
+				//<![CDATA[
+					changeProgressBar();
+				 //]]>
+				</script>
+				<?php
+				
+				$activateData = activateFacebookAccount($path, $userStatisticsDbName, $documentId, $email, $emailUrl);
+				//echo "activateData = ".serialize($activateData)."<br />";	//test
+				foreach($activateData as $key => $value) {
+					echo $key." => ".$value."<br />";	//test
+				}
+				$activateStatus = $activateData[0];
+				$accountId = $activateData[5];
+				$activateStatus = true;		//test
+				
+				if($registerStatus == false || $activateStatus == false) {
+					$errors[] = 'Wystąpił błąd przy rejestrowaniu konta użytkownika';
+					$errors[] = 'Błąd przy aktywacji nowego konta';
+					
+					?>
+					<div class="validation_error-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
+					<script type="text/javascript">
+					//<![CDATA[
+						swal( {
+								title: 'Uwaga',
+								text: '<?php foreach ($errors as $error) { echo $error; ?>\n<?php } ?>',
+								type: 'error',
+								confirmButtonColor: '#DD6B55',
+								closeOnConfirm: false
+							},
+							function(isConfirm) {
+								if(isConfirm) {
+									history.back();
+								}
+							}
+						);
+						//]]>
+					</script>
+					<?php
+				}
+				else {
+					//Pasek postępu
+					?>
+					<script type="text/javascript">
+					//<![CDATA[
+						changeProgressBar();
+					 //]]>
+					</script>
+					<?php
+					
+					//zmianie statusu konta Facebook-a
+					$document = array(
+						'logowanie' => array(
+							'id' => $accountId,
+							'login' => $login,
+							'password' => $password,
+							'typ' => 'potwierdzony'
+						)
+					);
+					
+					//$zmianaTypu = updatedocument($path, $facebookAccountDbName, $documentId, $document);
+					$zmianaTypu = true;		//test
+					
+					if($zmianaTypu == false) {
+						$errors[] = 'Wystąpił błąd przy rejestrowaniu konta użytkownika';
+						$errors[] = 'Błąd przy zmianie typu nowego konta w bazie danych';
+						
+						?>
+						<div class="validation_error-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
+						<script type="text/javascript">
+						//<![CDATA[
+							swal( {
+									title: 'Uwaga',
+									text: '<?php foreach ($errors as $error) { echo $error; ?>\n<?php } ?>',
+									type: 'error',
+									confirmButtonColor: '#DD6B55',
+									closeOnConfirm: false
+								},
+								function(isConfirm) {
+									if(isConfirm) {
+										history.back();
+									}
+								}
+							);
+							//]]>
+						</script>
+						<?php
+					}
+					else {
+						//Pasek postępu
+						?>
+						<script type="text/javascript">
+						//<![CDATA[
+							changeProgressBar();
+						 //]]>
+						</script>
+						<?php
+						
+						$komunikat = 'Konto użytkownika '.$imie.' '.$nazwisko.' zostało poprawnie zarejestrowane';
+						
+						?>
+						<div class="success-box"><?php echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$komunikat; ?></div>
+						<script type="text/javascript">
+						//<![CDATA[
+							/*swal( {
+									title: null,
+									text: '<?php echo $komunikat; ?>\n',
+									type: 'success',
+									timer: 5000,
+									showConfirmButton: false,
+									html: true
+								},
+								function() {
+									hideProgressBar();
+									window.location.href = 'index.php?id=dodajkonto';
+								}
+							);*/
+							//]]>
+						</script>
+						<?php
+					}
+				}
 			}
 		}
 	}
 }
 
-function postDeleteRoom($path, $roomDbName)
+function postAddFacebookPhoto($path, $userStatisticsDbName, $userData, $facebookAccountDbName)
 {
-	if ($_POST) {
+	if($_POST) {
+		//Liczba kroków dla paska postępu
+		$pasekLiczbaKrokow = 4;
+		
+		//Pasek postępu
+		?>
+		<div class="add_photo_loading" style="width: 100%; position: absolute; top: 140px; left: 0px; z-index: 100;">
+			<div class="container body-content">
+				<div class="jumbotron" style="padding-top: 170px; padding-bottom: 170px;">
+					<div class="progress">
+						<div class="progress-bar progress-bar-striped progress-bar-animated" id="add_photo_loading_bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<script type="text/javascript">
+		//<![CDATA[
+			function showProgressBar() {
+				$(".add_photo_loading").show();
+			}
+			
+			function changeProgressBar() {
+				var pasekLiczbaKrokow = Number('<?php echo $pasekLiczbaKrokow; ?>');
+				var element = document.getElementById('add_photo_loading_bar');
+				var postepObecny = Number(element.getAttribute("aria-valuenow"));
+				
+				var krok = 100 / pasekLiczbaKrokow;
+				var postepNowy = postepObecny + krok;
+				var procent = postepNowy + "%";
+				
+				element.setAttribute("aria-valuenow", postepNowy);
+				element.setAttribute("style", "width: " + procent + ";");
+			}
+			
+			function hideProgressBar() {
+				$(".add_photo_loading").hide();
+			}
+			
+			showProgressBar();
+			changeProgressBar();
+		 //]]>
+		</script>
+		<?php
+		
 		//Zczytanie danych
-		$s = cleardata($_POST['s']);
 		$nazwa = cleardata($_POST['nazwa']);
-		$wygenerowanyKod = cleardata($_POST['wkod']);
-		$kod = cleardata($_POST['kod']);
+		$link = $_POST['link'];
+		$userId = cleardata($_POST['user']);
+		$dodanieRok = cleardata($_POST['rok']);
+		$dodanieMiesiac = cleardata($_POST['miesiac']);
+		$dodanieDzien = cleardata($_POST['dzien']);
+		$dodanieGodzina = cleardata($_POST['godzina']);
+		$dodanieMinuta = cleardata($_POST['minuta']);
+		$dodanieSekunda = cleardata($_POST['sekunda']);
 		
 		//Tablica błędów
 		$errors = array();
 		
+		//Data dodania
+		$dodanieData = (int)$dodanieRok."-".(int)$dodanieMiesiac."-".(int)$dodanieDzien;
+		$dodanieCzas = (int)$dodanieGodzina.":".(int)$dodanieMinuta.":".(int)$dodanieSekunda;
+		
 		//Podstawowa walidacja formularza
-		if(empty($s) || empty($nazwa) || empty($wygenerowanyKod) || empty($kod)) {
-			$errors[] = 'Nie przesłano wszystkich danych';
-		}
-		
-		//Sprawdzenie przekierowania sali
-		if(isset($_REQUEST['s'])) {
-			$s = $_REQUEST['s'];
-			
-			//Nazwa dokumentu
-			$documentId = 'sala'.$s;
-			
-			//Upewnij się, że sala istnieje
-			if(!checkid($path, $roomDbName, $documentId)) {
-				$errors[] = 'Przykro nam, ale sala o podanym identyfikatorze nie istnieje';
-			}
-			
-			//Pobierz dane o sali
-			$roomData = data($path, $roomDbName, $documentId);
-		}
-		else {
-			$errors[] = 'Niewłaściwy adres';
-		}
-		
-		if(!empty($wygenerowanyKod) && !empty($kod)) {
-			//Sprawdź czy podany przez użytkownika kod jest prawidłowy
-			if($wygenerowanyKod != $kod) {
-				$errors[] = 'Podany kod jest nieprawidłowy';
-			}
+		if(empty($nazwa) || empty($link) || empty($userId) || empty($dodanieRok) ||
+		   empty($dodanieMiesiac) || empty($dodanieDzien) || ($dodanieGodzina == null) || ($dodanieMinuta == null) ||
+		   ($dodanieSekunda == null)) {
+			$errors[] = 'Proszę wypełnić wszystkie pola';
 		}
 		
 		if(!empty($errors)) {
 			//Jeśli wystąpiły jakieś błędy, to je pokaż
 			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
+			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 			<script type="text/javascript">
 			//<![CDATA[
 				swal( {
@@ -2091,29 +2062,63 @@ function postDeleteRoom($path, $roomDbName)
 			<?php
 		}
 		else {
-			//Jeżeli nie ma błędów to przechodzimy dalej
-			$deleteOk = false;
-			$deleteError = false;
+			//Pasek postępu
+			?>
+			<script type="text/javascript">
+			//<![CDATA[
+				changeProgressBar();
+			 //]]>
+			</script>
+			<?php
 			
-			//Usuń dokumentu z informacjami o sali do bazy danych
-			$response = deletedocument($path, $roomDbName, $documentId);
+			//Dodanie funkcji facebook-a
+			require 'facebook/datafun.php';
 			
-			$result = string_to_array($response, true);
-			$array = $result[0];
+			//Pobranie danych logowania
+			$accountData = getspecialdata($path, $facebookAccountDbName, 'konto1', array('mail', 'logowanie'));
+			$email = $accountData[0]['email'];
+			$accountId =  $accountData[1]['id'];
+			$login = $accountData[1]['login'];
+			$password = $accountData[1]['password'];
 			
-			$deleteOk = array_key_exists('ok', $array);
-			$deleteError = array_key_exists('error', $array);
+			$autologin = false;
+			if($autologin == true) {
+				$loginData = loginFacebookAccount($path, $userStatisticsDbName, $userData['_id'], $accountId, $email, $login, $password);
+				
+				$loginStatus = $loginData[0];
+			}
+			else {
+				$loginStatus = true;
+			}
 			
-			if($deleteOk == false || $deleteError == true) {
-				$error = "Wystąpił błąd przy usuwania sali";
+			//Pasek postępu
+			?>
+			<script type="text/javascript">
+			//<![CDATA[
+				changeProgressBar();
+			 //]]>
+			</script>
+			<?php
+			
+			$addData = addFacebookPhoto($path, $userStatisticsDbName, $userId, $link);
+			$addStatus = $addData[0];
+			$photoId = $addData[2];
+			$photoUser = $addData[3];
+			$photoDescription = $addData[4];
+			$photoUrl = $addData[5];
+			$addStatus = true;    //test
+			
+			if($loginStatus == false || $addStatus == false) {
+				$errors[] = 'Wystąpił błąd przy dodawaniu zdjęcia';
+				$errors[] = 'Błąd przy pobieraniu informacji o zdjęciu';
 				
 				?>
-				<div class="error-box"><?php echo $error; ?></div>
+				<div class="validation_error-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
 					swal( {
 							title: 'Uwaga',
-							text: '<?php echo $error; ?>\n',
+							text: '<?php foreach ($errors as $error) { echo $error; ?>\n<?php } ?>',
 							type: 'error',
 							confirmButtonColor: '#DD6B55',
 							closeOnConfirm: false
@@ -2129,24 +2134,40 @@ function postDeleteRoom($path, $roomDbName)
 				<?php
 			}
 			else {
-				$komunikat = 'Sala o nazwie <b>'.$nazwa.'</b> została poprawnie usunięta';
-				
+				//Pasek postępu
 				?>
-				<div class="success-box"><?php echo $komunikat; ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
-					swal( {
-							title: null,
-							text: '<?php echo $komunikat; ?>\n',
-							type: 'success',
-							timer: 5000,
-							showConfirmButton: false,
-							html: true
-						},
-						function() {
-							window.location.href = 'index.php?id=listasal';
-						}
-					);
+					changeProgressBar();
+				 //]]>
+				</script>
+				<?php
+				
+				//Jeżeli nie ma błędów to przechodzimy dalej
+				$response = true;
+				
+				//Wysłanie hasła
+				?>
+				<script type="text/javascript">
+				//<![CDATA[
+					var n = '<?php echo encodeUrlData($nazwa); ?>';
+					var l = '<?php echo encodeUrlData($link); ?>';
+					var u = '<?php echo $userId; ?>';
+					var pid = '<?php echo $photoId; ?>';
+					var pu = '<?php echo encodeUrlData($photoUser); ?>';
+					var pd = '<?php echo encodeUrlData($photoDescription); ?>';
+					var purl = '<?php echo encodeUrlData($photoUrl); ?>';
+					var drok = '<?php echo $dodanieRok; ?>';
+					var dmie = '<?php echo $dodanieMiesiac; ?>';
+					var ddzi = '<?php echo $dodanieDzien; ?>';
+					var dgodz = '<?php echo $dodanieGodzina; ?>';
+					var dmin = '<?php echo $dodanieMinuta; ?>';
+					var dsek = '<?php echo $dodanieSekunda; ?>';
+					var r = '<?php echo $response; ?>';
+					
+					var adres = 'index.php?id=dodajzdjeciepotwierdz&n=' + n + '&l=' + l + '&u=' + u + '&pid=' + pid + '&pu=' + pu + '&pd=' + pd + '&purl=' + purl + '&drok=' + drok + '&dmie=' + dmie + '&ddzi=' + ddzi + '&dgodz=' + dgodz + '&dmin=' + dmin + '&dsek=' + dsek + '&r=' + r;
+					
+					window.location.href = adres;
 					//]]>
 				</script>
 				<?php
@@ -2155,114 +2176,87 @@ function postDeleteRoom($path, $roomDbName)
 	}
 }
 
-function postAddReservation($path, $userSecurityDbName, $userData, $roomDbName, $reservationDbName, $serviceDbName)
+function postAddFacebookPhotoConfirm($path, $facebookPhotoDbName)
 {
-	if ($_POST) {
+	if($_POST) {
+		//Liczba kroków dla paska postępu
+		$pasekLiczbaKrokow = 4;
+		
+		//Pasek postępu
+		?>
+		<div class="add_photo_loading" style="width: 100%; position: absolute; top: 140px; left: 0px; z-index: 100;">
+			<div class="container body-content">
+				<div class="jumbotron" style="padding-top: 170px; padding-bottom: 170px;">
+					<div class="progress">
+						<div class="progress-bar progress-bar-striped progress-bar-animated" id="add_photo_loading_bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<script type="text/javascript">
+		//<![CDATA[
+			function showProgressBar() {
+				$(".add_photo_loading").show();
+			}
+			
+			function changeProgressBar() {
+				var pasekLiczbaKrokow = Number('<?php echo $pasekLiczbaKrokow; ?>');
+				var element = document.getElementById('add_photo_loading_bar');
+				var postepObecny = Number(element.getAttribute("aria-valuenow"));
+				
+				var krok = 100 / pasekLiczbaKrokow;
+				var postepNowy = postepObecny + krok;
+				var procent = postepNowy + "%";
+				
+				element.setAttribute("aria-valuenow", postepNowy);
+				element.setAttribute("style", "width: " + procent + ";");
+			}
+			
+			function hideProgressBar() {
+				$(".add_photo_loading").hide();
+			}
+			
+			showProgressBar();
+			changeProgressBar();
+		 //]]>
+		</script>
+		<?php
+		
 		//Zczytanie danych
 		$nazwa = cleardata($_POST['nazwa']);
-		$sala = cleardata($_POST['sala']);
-		$osoba = cleardata($_POST['osoba']);
-		$od = cleardata($_POST['od']);
-		$do = cleardata($_POST['do']);
-		$komentarz = cleardata($_POST['komentarz']);
-		$maxDlugosc = cleardata($_POST['max']);
-		$rok = cleardata($_POST['rok']);
-		$miesiac = cleardata($_POST['miesiac']);
-		$dzien = cleardata($_POST['dzien']);
-		$godzina = cleardata($_POST['godzina']);
-		$minuta = cleardata($_POST['minuta']);
-		$sekunda = cleardata($_POST['sekunda']);
-		
-		//Pobieranie informacji
-		$idServiceList = getuseridlist($path, $serviceDbName);
-		
-		//Sprawdzanie ile jest wszystkich usług
-		$ileU = count($idServiceList);
-		$licznik = 0;
-		
-		//Tworzenie pustego dokumentu
-		$uslugiWszystkie = array();
-		
-		//Zczytanie dodatkowych danych
-		for($i=0; $i<$ileU; $i++) {
-			$numer = $i+1;
-			
-			//Nazwa dokumentu
-			$serviceId = 'usluga'.$numer;
-			
-			//Upewnij się, że usługa istnieje
-			if(checkid($path, $serviceDbName, $serviceId)) {
-				$uslugiWszystkie[$licznik] = !isset($_REQUEST[$serviceId]) ? "" : cleardata($_REQUEST[$serviceId]);
-				
-				$licznik++;
-			}
-		}
+		$link = $_POST['link'];
+		$userId = cleardata($_POST['user']);
+		$photoId = cleardata($_POST['photo_id']);
+		$photoUser = cleardata($_POST['photo_user']);
+		$photoDescription = cleardata($_POST['photo_description']);
+		$photoUrl = $_POST['photo_url'];
+		$dodanieRok = cleardata($_POST['rok']);
+		$dodanieMiesiac = cleardata($_POST['miesiac']);
+		$dodanieDzien = cleardata($_POST['dzien']);
+		$dodanieGodzina = cleardata($_POST['godzina']);
+		$dodanieMinuta = cleardata($_POST['minuta']);
+		$dodanieSekunda = cleardata($_POST['sekunda']);
 		
 		//Tablica błędów
 		$errors = array();
 		
-		//Data rezerwacji
-		$odRok = (int)substr($od, 0, 4);
-		$odMiesiac = (int)substr($od, 5, 2);
-		$odDzien = (int)substr($od, 8, 2);
-		$odGodzina = (int)substr($od, 11, 2);
-		$odMinuta = (int)substr($od, 14, 2);
-		$odSekunda = 0;
-		
-		$doRok = (int)substr($do, 0, 4);
-		$doMiesiac = (int)substr($do, 5, 2);
-		$doDzien = (int)substr($do, 8, 2);
-		$doGodzina = (int)substr($do, 11, 2);
-		$doMinuta = (int)substr($do, 14, 2);
-		$doSekunda = 0;
+		//Data dodania
+		$dodanieData = (int)$dodanieRok."-".(int)$dodanieMiesiac."-".(int)$dodanieDzien;
+		$dodanieCzas = (int)$dodanieGodzina.":".(int)$dodanieMinuta.":".(int)$dodanieSekunda;
 		
 		//Podstawowa walidacja formularza
-		if(empty($nazwa) || empty($sala) || empty($osoba) || empty($odRok) ||
-		   empty($odMiesiac) || empty($odDzien) || empty($doRok) || empty($doMiesiac) ||
-		   empty($doDzien) || empty($maxDlugosc) || empty($rok) || empty($miesiac) ||
-		   empty($dzien)) {
+		if(empty($nazwa) || empty($link) || empty($userId) || empty($photoId) ||
+		   empty($photoUser) || empty($photoDescription) || empty($photoUrl) || empty($dodanieRok) ||
+		   empty($dodanieMiesiac) || empty($dodanieDzien) || ($dodanieGodzina == null) || ($dodanieMinuta == null) ||
+		   ($dodanieSekunda == null)) {
 			$errors[] = 'Proszę wypełnić wszystkie pola';
-		}
-		
-		if(!empty($ileU) || !empty($licznik)) {
-			//Sprawdź czy liczba usług się zgadza
-			if($ileU != $licznik) {
-				$errors[] = 'Podana liczba usług się nie zgadza';
-			}
-		}
-		
-		if(!empty($maxDlugosc)) {
-			//Sprawdź czy podana maksymalna długość jest poprawna
-			if(!preg_match('/^([0-9]){1,}$/i', $maxDlugosc)) {
-				$errors[] = 'Podana maksymalna długość jest nie poprawna';
-			}
-			
-			$maxDlugosc = (int)$maxDlugosc;
-		}
-		
-		$od =  mktime($odGodzina, $odMinuta, $odSekunda, $odMiesiac, $odDzien, $odRok);
-		$do =  mktime($doGodzina, $doMinuta, $doSekunda, $doMiesiac, $doDzien, $doRok);
-		
-		//Sprawdź czy podane daty rezerwacji się zgadzają
-		if($od >= $do) {
-			$errors[] = 'Podane daty rezerwacji się nie zgadzają';
-		}
-		
-		if(!empty($komentarz)) {
-			//Sprawdź czy podany przez użytkownika komentarz nie jest za długi
-			if(strlen($komentarz) > 500) {
-				$errors[] = 'Podany komentarz jest za długi';
-			}
-			
-			//Usuwanie znaków nowej linii z komentarza
-			$komentarz = preg_replace("'\n|\r\n|\r'si", "<br />", $komentarz);
-			$komentarz = str_replace('<br />^<br />', '<br />', $komentarz);
 		}
 		
 		if(!empty($errors)) {
 			//Jeśli wystąpiły jakieś błędy, to je pokaż
 			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
+			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 			<script type="text/javascript">
 			//<![CDATA[
 				swal( {
@@ -2283,12 +2277,17 @@ function postAddReservation($path, $userSecurityDbName, $userData, $roomDbName, 
 			<?php
 		}
 		else {
-			//Jeżeli nie ma błędów to przechodzimy dalej
-			$createOk = false;
-			$createError = false;
+			//Pasek postępu
+			?>
+			<script type="text/javascript">
+			//<![CDATA[
+				changeProgressBar();
+			 //]]>
+			</script>
+			<?php
 			
-			//Wyznaczanie nowego ID dokumentu
-			$responseList = listofdocument($path, $reservationDbName);
+			//Jeżeli nie ma błędów to przechodzimy dalej
+			$responseList = listofdocument($path, $facebookPhotoDbName);	//Wyznaczanie nowego ID dokumentu
 			
 			$resultList = string_to_array($responseList, true);
 			$arrayList = $resultList[0];
@@ -2297,121 +2296,63 @@ function postAddReservation($path, $userSecurityDbName, $userData, $roomDbName, 
 			$ileMax = 0;
 			for($i=0; $i<$ile; $i++) {
 				$name = $arrayList['rows'][$i]['id'];
-				$numer = substr($name, 10);
+				$numer = substr($name, 7);
 				$ileMax = max($ileMax, $numer);
 			}
 			
-			$documentId = 'rezerwacja'.($ileMax + 1);
-			
-			$od = strpos($sala, ":");
-			$temp = substr($sala, $od+2);
-			$do = strpos($temp, "=");
-			$salaNazwa = substr($temp, 0, $do-1);
-			
-			//Pobieranie informacji
-			$idRoomList = getuseridlist($path, $roomDbName);
-			
-			//Sprawdzanie ile jest wszystkich sal
-			$ileSal = count($idRoomList);
-			
-			if($ileSal > 0) {
-				for($i=0; $i<$ileSal; $i++) {
-					$numer = $i+1;
-					
-					//Nazwa dokumentu
-					$roomId = 'sala'.$numer;
-					
-					$roomData = getspecialdata($path, $roomDbName, $roomId, "nazwa");
-					
-					if($roomData == $salaNazwa) {
-						$sala = $roomId;
-					}
-				}
-			}
-			
-			//Tworzenie pustego dokumentu
-			$uslugi = array();
-			
-			$licznik = 1;
-			
-			//Zapisywanie dokumentu
-			for($i=0; $i<$ileU; $i++) {
-				//Sprawdzanie, czy usługa została wybrana
-				if($uslugiWszystkie[$i] != null || $uslugiWszystkie[$i] != '') {
-					$uslugi[$licznik] = $uslugiWszystkie[$i];
-					
-					$licznik++;
-				}
-			}
-			
-			$userId = getidfromsession();
-			
-			//Sprawdź czy użytkownik to admin
-			if(checkadmin($path, $userSecurityDbName, $userId, $userData)) {
-				$superUser = true;
-				$status = 'potwierdzona';
-			}
-			else {
-				$superUser = false;
-				$status = 'niepotwierdzona';
-			}
+			$documentId = 'zdjecie'.($ileMax + 1);
 			
 			//Tworzenie nowego dokumentu
-			$document = array(
+			$photoDocument = array(
 				'_id' => $documentId,
 				'nazwa' => $nazwa,
-				'sala' => $sala,
-				'osoba' => $osoba,
-				'uslugi' => $uslugi,
+				'link' => $link,
+				'user_id' => $userId,
+				'photo_id' => $photoId,
+				'photo_user' => $photoUser,
+				'photo_description' => $photoDescription,
+				'photo_url' => $photoUrl,
+				'statystyki' => array(
+					'status' => 'dodane',
+					'ilosc_uzyc' => 0
+				),
 				'dodanie' => array(
-					'rok' => (int)$rok,
-					'miesiac' => (int)$miesiac,
-					'dzien' => (int)$dzien,
-					'godzina' => (int)$godzina,
-					'minuta' => (int)$minuta,
-					'sekunda' => (int)$sekunda
-				),
-				'rezerwacja' => array(
-					'od' => array(
-						'rok' => (int)$odRok,
-						'miesiac' => (int)$odMiesiac,
-						'dzien' => (int)$odDzien,
-						'godzina' => (int)$odGodzina,
-						'minuta' => (int)$odMinuta,
-						'sekunda' => (int)$odSekunda
-					),
-					'do' => array(
-						'rok' => (int)$doRok,
-						'miesiac' => (int)$doMiesiac,
-						'dzien' => (int)$doDzien,
-						'godzina' => (int)$doGodzina,
-						'minuta' => (int)$doMinuta,
-						'sekunda' => (int)$doSekunda
-					)
-				),
-				'status' => $status,
-				'komentarz' => $komentarz
+					'dodanie_rok' => (int)$dodanieRok,
+					'dodanie_miesiac' => (int)$dodanieMiesiac,
+					'dodanie_dzien' => (int)$dodanieDzien,
+					'dodanie_godzina' => (int)$dodanieGodzina,
+					'dodanie_minuta' => (int)$dodanieMinuta,
+					'dodanie_sekunda' => (int)$dodanieSekunda
+				)
 			);
 			
-			//Zapis nowego dokumentu z informacjami o rezerwacji do bazy danych
-			$response = createdocument($path, $reservationDbName, $document);
+			//Pasek postępu
+			?>
+			<script type="text/javascript">
+			//<![CDATA[
+				changeProgressBar();
+			 //]]>
+			</script>
+			<?php
+			
+			//Zapis nowego dokumentu z informacjami o zdjęciu na facebook-u do bazy danych
+			$response = createdocument($path, $facebookPhotoDbName, $photoDocument);
 			
 			$result = string_to_array($response, true);
 			$array = $result[0];
+			$create = array_key_exists('error', $array);
 			
-			$createOk = array_key_exists('ok', $array);
-			$createError = array_key_exists('error', $array);
-			
-			if($createOk == false || $createError == true) {
-				$error = "Wystąpił błąd przy rejestrowaniu rezerwacji";
+			if($create == true) {
+				$errors[] = 'Wystąpił błąd przy dodawaniu zdjęcia';
+				$errors[] = 'Błąd przy zapisie informacji o zdjęciu do bazy danych';
 				
 				?>
-				<div class="error-box"><?php echo $error; ?></div>
+				<div class="validation_error-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
 					swal( {
 							title: 'Uwaga',
-							text: '<?php echo $error; ?>\n',
+							text: '<?php foreach ($errors as $error) { echo $error; ?>\n<?php } ?>',
 							type: 'error',
 							confirmButtonColor: '#DD6B55',
 							closeOnConfirm: false
@@ -2427,161 +2368,19 @@ function postAddReservation($path, $userSecurityDbName, $userData, $roomDbName, 
 				<?php
 			}
 			else {
-				$komunikat = 'Rezerwacja o nazwie '.$nazwa.' została poprawnie zarejestrowany';
-				
-				if($superUser == true) {
-					$id = 'dodajrezerwacjezaawansowany';
-				}
-				else {
-					$id = 'dodajrezerwacje';
-				}
-				
+				//Pasek postępu
 				?>
-				<div class="success-box"><?php echo $komunikat; ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
-					var id = '<?php echo $id; ?>';
-					
-					var adres = 'index.php?id=' + id;
-					
-					swal( {
-							title: null,
-							text: '<?php echo $komunikat; ?>\n',
-							type: 'success',
-							timer: 5000,
-							showConfirmButton: false,
-							html: true
-						},
-						function() {
-							window.location.href = adres;
-						}
-					);
-					//]]>
+					changeProgressBar();
+				 //]]>
 				</script>
 				<?php
-			}
-		}
-	}
-}
-
-function postCancelReservation($path, $reservationDbName)
-{
-	if ($_POST) {
-		//Zczytanie danych
-		$r = cleardata($_POST['r']);
-		$nazwa = cleardata($_POST['nazwa']);
-		$wygenerowanyKod = cleardata($_POST['wkod']);
-		$kod = cleardata($_POST['kod']);
-		
-		//Tablica błędów
-		$errors = array();
-		
-		//Podstawowa walidacja formularza
-		if(empty($r) || empty($nazwa) || empty($wygenerowanyKod) || empty($kod)) {
-			$errors[] = 'Nie przesłano wszystkich danych';
-		}
-		
-		//Sprawdzenie przekierowania rezerwacji
-		if(isset($_REQUEST['r'])) {
-			$r = $_REQUEST['r'];
-			
-			//Nazwa dokumentu
-			$documentId = 'rezerwacja'.$r;
-			
-			//Upewnij się, że rezerwacja istnieje
-			if(!checkid($path, $reservationDbName, $documentId)) {
-				header('Location: index.php');
-				echo '<p class="error">Przykro nam, ale rezerwacja o podanym identyfikatorze nie istnieje.</p>';
 				
-				die;
-			}
-			
-			//Pobierz dane o rezerwacji
-			$reservationData = data($path, $reservationDbName, $documentId);
-		}
-		else {
-			$errors[] = 'Niewłaściwy adres';
-		}
-		
-		if(!empty($wygenerowanyKod) && !empty($kod)) {
-			//Sprawdź czy podany przez użytkownika kod jest prawidłowy
-			if($wygenerowanyKod != $kod) {
-				$errors[] = 'Podany kod jest nieprawidłowy';
-			}
-		}
-		
-		if(!empty($errors)) {
-			//Jeśli wystąpiły jakieś błędy, to je pokaż
-			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
-			<script type="text/javascript">
-			//<![CDATA[
-				swal( {
-						title: 'Uwaga',
-						text: '<?php foreach ($errors as $error) { echo $error; ?>\n<?php } ?>',
-						type: 'warning',
-						confirmButtonColor: '#DD6B55',
-						closeOnConfirm: false
-					},
-					function(isConfirm) {
-						if(isConfirm) {
-							history.back();
-						}
-					}
-				);
-				//]]>
-			</script>
-			<?php
-		}
-		else {
-			//Jeżeli nie ma błędów to przechodzimy dalej
-			$cancelOk = false;
-			$cancelError = false;
-			
-			//Tworzenie pustego dokumentu
-			$document = array();
-			
-			//Zapisywanie dokumentu
-			$document['status'] = "anulowana";
-			
-			//Zapis dokumentu z informacjami o rezerwacji do bazy danych
-			$response = updatedocument($path, $reservationDbName, $documentId, $document);
-			
-			$result = string_to_array($response[1], true);
-			$array = $result[0];
-			
-			$cancelOk = array_key_exists('ok', $array);
-			$cancelError = array_key_exists('error', $array);
-			
-			if($cancelOk == false || $cancelError == true) {
-				$error = "Wystąpił błąd przy anulowaniu rezerwacji";
+				$komunikat = 'Zdjęcie '.$nazwa.' zostało poprawnie dodane';
 				
 				?>
-				<div class="error-box"><?php echo $error; ?></div>
-				<script type="text/javascript">
-				//<![CDATA[
-					swal( {
-							title: 'Uwaga',
-							text: '<?php echo $error; ?>\n',
-							type: 'error',
-							confirmButtonColor: '#DD6B55',
-							closeOnConfirm: false
-						},
-						function(isConfirm) {
-							if(isConfirm) {
-								history.back();
-							}
-						}
-					);
-					//]]>
-				</script>
-				<?php
-			}
-			else {
-				$komunikat = 'Rezerwacja o nazwie <b>'.$nazwa.'</b> została poprawnie anulowana';
-				
-				?>
-				<div class="success-box"><?php echo $komunikat; ?></div>
+				<div class="success-box"><?php echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$komunikat; ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
 					swal( {
@@ -2593,7 +2392,8 @@ function postCancelReservation($path, $reservationDbName)
 							html: true
 						},
 						function() {
-							window.location.href = 'index.php?id=listarezerwacji';
+							hideProgressBar();
+							window.location.href = 'index.php?id=dodajzdjecie';
 						}
 					);
 					//]]>
@@ -2606,7 +2406,7 @@ function postCancelReservation($path, $reservationDbName)
 
 function postSendTextMessage()
 {
-	if ($_POST) {
+	if($_POST) {
 		//Zczytanie danych
 		$maxDlugosc = cleardata($_POST['max']);
 		$path = cleardata($_POST['path']);
@@ -2680,7 +2480,7 @@ function postSendTextMessage()
 		if(!empty($errors)) {
 			//Jeśli wystąpiły jakieś błędy, to je pokaż
 			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
+			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 			<script type="text/javascript">
 			//<![CDATA[
 				swal( {
@@ -2714,7 +2514,7 @@ function postSendTextMessage()
 				$error = "Wystąpił błąd podczas wysyłania wiadomości";
 				
 				?>
-				<div class="error-box"><?php echo $error; ?></div>
+				<div class="error-box"><?php echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error; ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
 					swal( {
@@ -2750,7 +2550,7 @@ function postSendTextMessage()
 				$komunikat = 'Wiadomość została wysłana';
 				
 				?>
-				<div class="validation_success-box"><?php echo $komunikat; ?></div>
+				<div class="validation_success-box"><?php echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$komunikat; ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
 					var d = '<?php echo $aktualnaData; ?>';
@@ -2783,7 +2583,7 @@ function postSendTextMessage()
 }
 
 function postAdvancedDatabaseEdit($path) {
-	if ($_POST) {
+	if($_POST) {
 		//Zczytanie danych
 		$haslo = cleardata($_POST['haslo']);
 		
@@ -2798,7 +2598,7 @@ function postAdvancedDatabaseEdit($path) {
 		if(!empty($errors)) {
 			//Jeśli wystąpiły jakieś błędy, to je pokaż
 			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
+			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 			<script type="text/javascript">
 			//<![CDATA[
 				swal( {
@@ -2841,7 +2641,7 @@ function postAdvancedDatabaseEdit($path) {
 
 function postEditAdminSettings($path)
 {
-	if ($_POST) {
+	if($_POST) {
 		//Zczytanie danych podstawowych
 		$ile = cleardata($_POST['ile']);
 		
@@ -2890,7 +2690,7 @@ function postEditAdminSettings($path)
 		if(!empty($errors)) {
 			//Jeśli wystąpiły jakieś błędy, to je pokaż
 			?>
-			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo $error."<br />"; } ?></div>
+			<div class="validation_warning-box"><?php foreach ($errors as $error) { echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error."<br />"; } ?></div>
 			<script type="text/javascript">
 			//<![CDATA[
 				swal( {
@@ -2951,7 +2751,7 @@ function postEditAdminSettings($path)
 			);
 			
 			//Zapis dokumentu z wrażliwymi ustawieniami systemu do bazy danych
-			$response = updatedocument($path, 'sziroom', 'config', $document);
+			$response = updatedocument($path, 'facelike', 'config', $document);
 			
 			$result = string_to_array($response[1], true);
 			$array = $result[0];
@@ -2963,7 +2763,7 @@ function postEditAdminSettings($path)
 				$error = "Wystąpił błąd podczas aktualizacji ustawień systemu";
 				
 				?>
-				<div class="error-box"><?php echo $error; ?></div>
+				<div class="error-box"><?php echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$error; ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
 					swal( {
@@ -2987,7 +2787,7 @@ function postEditAdminSettings($path)
 				$komunikat = 'Ustawienia systemu zostały poprawnie zmienione';
 				
 				?>
-				<div class="validation_success-box"><?php echo $komunikat; ?></div>
+				<div class="validation_success-box"><?php echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$komunikat; ?></div>
 				<script type="text/javascript">
 				//<![CDATA[
 					swal( {

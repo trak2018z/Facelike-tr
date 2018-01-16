@@ -15,7 +15,7 @@ function checksession($refresh = false)
 	return false;
 }
 
-function checksessionrefresh($path, $userSecurityDbName, $userId)
+function checksessionrefresh($path, $userStatisticsDbName, $userId)
 {
 	$autoLogoutTime = $_SESSION['auto_logout_time'];
 	
@@ -25,7 +25,7 @@ function checksessionrefresh($path, $userSecurityDbName, $userId)
 		setOneCookie('autoLogoutTime', $autoLogoutTime, 0, 1);
 		
 		//Zapisanie nowego statusu i czasu ostatniej aktywności użytkownika do bazy danych
-		changeloginstatus($path, $userSecurityDbName, $userId, 5, false);
+		changeloginstatus($path, $userStatisticsDbName, $userId, 5, false);
 		
 		//Wyloguj
 		session_destroy();
@@ -33,7 +33,7 @@ function checksessionrefresh($path, $userSecurityDbName, $userId)
 		header('Location: index.php?id=automatycznewylogowanie');
 	}
 	else {
-		updatesession($path, $userSecurityDbName, $userId);
+		updatesession($path, $userStatisticsDbName, $userId);
 		
 		return true;
 	}
@@ -62,10 +62,10 @@ function createsession($userId, $path)
 	$_SESSION['last_refresh_time'] = time();
 }
 
-function updatesession($path, $userSecurityDbName, $userId)
+function updatesession($path, $userStatisticsDbName, $userId)
 {	
 	//Zapisanie nowego statusu i czasu ostatniej aktywności użytkownika do bazy danych
-	changeloginstatus($path, $userSecurityDbName, $userId, 4, false);
+	changeloginstatus($path, $userStatisticsDbName, $userId, 4, false);
 	
 	$_SESSION['last_refresh_time'] = time();
 }

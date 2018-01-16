@@ -27,7 +27,6 @@ require 'includes/config.php';
 						<center>
 							<input type="submit" class="btn btn-primary btn-lg" value="Odzyskaj konto &raquo" />
 						</center>
-						<br />
 					</td>
 				</tr>
 			</table>

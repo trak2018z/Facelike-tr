@@ -3,8 +3,19 @@ $path = "./couchdb/";	//Ścieżka operacyjna
 
 //Upewnij się że użytkownik jest zalogowany
 if(!checksession()) {
-	exit(header('Location: index.php'));
-	echo '<p class="error">Przykro nam, ale ta strona jest dostępna tylko dla zalogowanych użytkowników.</p>';
+	if(headers_sent()) {
+		?>
+		<script type="text/javascript">
+		//<![CDATA[
+			location.replace('index.php');
+		 //]]>
+		</script>
+		<?php
+	}
+	else{
+		exit(header('Location: index.php'));
+	}
+	echo '<div class="error-box">Przykro nam, ale ta strona jest dostępna tylko dla zalogowanych użytkowników.</div>';
 	
 	die;
 }
@@ -13,8 +24,19 @@ $userId = getidfromsession();
 
 //Upewnij się, że użytkownik istnieje
 if(!checkid($path, $userDataDbName, $userId)) {
-	exit(header('Location: index.php'));
-	echo '<p class="error">Przykro nam, ale użytkownik o podanym identyfikatorze nie istnieje.</p>';
+	if(headers_sent()) {
+		?>
+		<script type="text/javascript">
+		//<![CDATA[
+			location.replace('index.php');
+		 //]]>
+		</script>
+		<?php
+	}
+	else{
+		exit(header('Location: index.php'));
+	}
+	echo '<div class="error-box">Przykro nam, ale użytkownik o podanym identyfikatorze nie istnieje.</div>';
 	
 	die;
 }
@@ -37,8 +59,19 @@ if($superUser == true && isset($_REQUEST['u'])) {
 	
 	//Upewnij się, że użytkownik istnieje
 	if(!checkid($path, $userDataDbName, $u)) {
-		exit(header('Location: index.php'));
-		echo '<p class="error">Przykro nam, ale użytkownik o podanym identyfikatorze nie istnieje.</p>';
+		if(headers_sent()) {
+			?>
+			<script type="text/javascript">
+			//<![CDATA[
+				location.replace('index.php');
+			 //]]>
+			</script>
+			<?php
+		}
+		else{
+			exit(header('Location: index.php'));
+		}
+		echo '<div class="error-box">Przykro nam, ale użytkownik o podanym identyfikatorze nie istnieje.</div>';
 		
 		die;
 	}
@@ -49,7 +82,8 @@ if($superUser == true && isset($_REQUEST['u'])) {
 	
 	//Pobierz dane o użytkowniku
 	$userData = data($path, $userDataDbName, $userId);
-	$userStatistics = data($path, $userSecurityDbName, $userId);
+	$userSecurity = data($path, $userSecurityDbName, $userId);
+	$userStatistics = data($path, $userStatisticsDbName, $userId);
 	
 	//Sprawdzenie czy użytkownik to admin
 	if(checkadmin($path, $userSecurityDbName, $userId, $userData)) {
@@ -70,8 +104,8 @@ $registration = $registrationDate." ".$registrationTime;
 
 //Statystyki użytkownika
 if($przekierowanie == true) {
-	if((isset($userStatistics['typ'])) && ($userStatistics['typ'] != null || $userStatistics['typ'] != ''))
-		$uprawnienia = $userStatistics['typ'];
+	if((isset($userSecurity['typ'])) && ($userSecurity['typ'] != null || $userSecurity['typ'] != ''))
+		$uprawnienia = $userSecurity['typ'];
 	else
 		$uprawnienia = 'nieprzydzielone';
 	
@@ -91,6 +125,19 @@ if($przekierowanie == true) {
 		$region = $userStatistics['loginstatus']['ip_details']['region'];
 		$miasto = $userStatistics['loginstatus']['ip_details']['miasto'];
 		$kodPocztowy = $userStatistics['loginstatus']['ip_details']['kod_pocztowy'];
+		
+		if(isset($userStatistics['loginstatus']['geolocation_data'])) {
+			$szerokoscGeograficznaGeolokalizacja = $userStatistics['loginstatus']['geolocation_data']['szerokosc_geograficzna'];
+			$dlugoscGeograficznaGeolokalizacja = $userStatistics['loginstatus']['geolocation_data']['dlugosc_geograficzna'];
+			$wysokosc = $userStatistics['loginstatus']['geolocation_data']['wysokosc'];
+			$naglowek = $userStatistics['loginstatus']['geolocation_data']['naglowek'];
+		}
+		else {
+			$szerokoscGeograficznaGeolokalizacja = "Brak danych";
+			$dlugoscGeograficznaGeolokalizacja = "Brak danych";
+			$wysokosc = "Brak danych";
+			$naglowek = "Brak danych";
+		}
 		
 		if(isset($userStatistics['loginstatus']['date'])) {
 			$eventPointDate = $userStatistics['loginstatus']['date']['rok']."-".$userStatistics['loginstatus']['date']['miesiac']."-".$userStatistics['loginstatus']['date']['dzien'];
@@ -119,6 +166,11 @@ if($przekierowanie == true) {
 		$region = "Brak danych";
 		$miasto = "Brak danych";
 		$kodPocztowy = "Brak danych";
+		
+		$szerokoscGeograficznaGeolokalizacja = "Brak danych";
+		$dlugoscGeograficznaGeolokalizacja = "Brak danych";
+		$wysokosc = "Brak danych";
+		$naglowek = "Brak danych";
 		
 		$eventPoint = "Brak danych";
 	}
@@ -233,218 +285,281 @@ if($przekierowanie == true) {
 
 <div class="container body-content">
 	<div class="jumbotron">
-		<br />
 		<?php
 		if($przekierowanie == false) {
 			?>
-			<table id="t07">
-				<caption>Profil <?php echo $nazwa.' '.$userData['imie'].' '.$userData['nazwisko']; ?></caption>
+			<h2>Profil <?php echo $nazwa.' '.$userData['imie'].' '.$userData['nazwisko']; ?></h2>
+			<hr />
+			<table>
 				<tr>
-					<td>Imię</td>
-					<td><?php echo $userData['imie'] ?></td>
+					<td>Imię: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['imie']; ?></font></td>
 				</tr>
 				<tr>
-					<td>Nazwisko</td>
-					<td><?php echo $userData['nazwisko'] ?></td>
+					<td>Nazwisko: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['nazwisko']; ?></font></td>
 				</tr>
 				<tr>
-					<td>Płeć</td>
-					<td><?php echo getplec($userData['plec']) ?></td>
+					<td>Płeć: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo getplec($userData['plec']); ?></font></td>
 				</tr>
 				<tr>
-					<td>Data urodzenia</td>
-					<td><?php echo $birthDate ?></td>
+					<td>Data urodzenia: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $birthDate; ?></font></td>
 				</tr>
 				<tr>
-					<td>Kraj</td>
-					<td><?php echo $userData['adres']['kraj'] ?></td>
+					<td>Kraj: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['kraj']; ?></font></td>
 				</tr>
 				<tr>
-					<td>Województwo</td>
-					<td><?php echo $userData['adres']['wojewodztwo'] ?></td>
+					<td>Województwo: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['wojewodztwo']; ?></font></td>
 				</tr>
 				<tr>
-					<td>Miasto</td>
-					<td><?php echo $userData['adres']['miasto'] ?></td>
+					<td>Miasto: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['miasto']; ?></font></td>
 				</tr>
 				<tr>
-					<td>Ulica</td>
-					<td><?php echo $userData['adres']['ulica'] ?></td>
+					<td>Ulica: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['ulica']; ?></font></td>
 				</tr>
 				<tr>
-					<td>Poczta</td>
-					<td><?php echo $userData['adres']['poczta'] ?></td>
+					<td>Poczta: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['poczta']; ?></font></td>
 				</tr>
 				<tr>
-					<td>Telefon</td>
-					<td><?php echo $userData['telefon'] ?></td>
+					<td>Telefon: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['telefon']; ?></font></td>
 				</tr>
 				<tr>
-					<td>Email</td>
-					<td><?php echo $userData['mail'] ?></td>
+					<td>Email: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['mail']; ?></font></td>
 				</tr>
 				<tr>
-					<td>Hasło</td>
-					<td><?php echo "*****" ?></td>
+					<td>Hasło: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo "*****"; ?></font></td>
 				</tr>
 				<tr>
-					<td>Rejestracja</td>
-					<td><?php echo $registration ?></td>
+					<td>Rejestracja: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $registration; ?></font></td>
 				</tr>
 			</table>
 			<?php
 		}
 		if($przekierowanie == true) {
 			?>
-			<br /><br />
-			<div id="t08ramka">
-			<table id="t08">
-				<caption>Profil <?php echo $nazwa.' '.$userData['imie'].' '.$userData['nazwisko']; ?></caption>
+			<h2>Profil <?php echo $nazwa.' '.$userData['imie'].' '.$userData['nazwisko']; ?></h2>
+			<hr />
+			<table>
 				<tr>
-					<td>
-						<table id="t09">
-							<tr>
-								<td>Imię</td>
-								<td><?php echo $userData['imie'] ?></td>
-							</tr>
-							<tr>
-								<td>Nazwisko</td>
-								<td><?php echo $userData['nazwisko'] ?></td>
-							</tr>
-							<tr>
-								<td>Płeć</td>
-								<td><?php echo getplec($userData['plec']) ?></td>
-							</tr>
-							<tr>
-								<td>Data urodzenia</td>
-								<td><?php echo $birthDate ?></td>
-							</tr>
-							<tr>
-								<td>Kraj</td>
-								<td><?php echo $userData['adres']['kraj'] ?></td>
-							</tr>
-							<tr>
-								<td>Województwo</td>
-								<td><?php echo $userData['adres']['wojewodztwo'] ?></td>
-							</tr>
-							<tr>
-								<td>Miasto</td>
-								<td><?php echo $userData['adres']['miasto'] ?></td>
-							</tr>
-							<tr>
-								<td>Ulica</td>
-								<td><?php echo $userData['adres']['ulica'] ?></td>
-							</tr>
-							<tr>
-								<td>Poczta</td>
-								<td><?php echo $userData['adres']['poczta'] ?></td>
-							</tr>
-							<tr>
-								<td>Telefon</td>
-								<td><?php echo $userData['telefon'] ?></td>
-							</tr>
-							<tr>
-								<td>Email</td>
-								<td><?php echo $userData['mail'] ?></td>
-							</tr>
-							<tr>
-								<td>Hasło</td>
-								<td><?php echo "*****" ?></td>
-							</tr>
-							<tr>
-								<td>Rejestracja</td>
-								<td><?php echo $registration ?></td>
-							</tr>
-							<tr>
-								<td>Uprawnienia</td>
-								<td><?php echo $uprawnienia ?></td>
-							</tr>
-						</table>
-					</td>
-					<td>
-						<table id="t10">
-							<tr>
-								<td>Status logowania</td>
-								<td></td>
-							</tr>
-							<tr id="tp01">
-								<td>Status</td>
-								<td><?php echo $status ?></td>
-							</tr>
-							<tr id="tp01">
-								<td>Dane klienta</td>
-								<td></td>
-							</tr>
-							<tr id="tp02">
-								<td>System</td>
-								<td><?php echo $system ?></td>
-							</tr>
-							<tr id="tp02">
-								<td>Przeglądarka</td>
-								<td><?php echo $przegladarka ?></td>
-							</tr>
-							<tr id="tp02">
-								<td>Aplikacja kliencka</td>
-								<td><?php echo $aplikacjaKliencka ?></td>
-							</tr>
-							<tr id="tp02">
-								<td>Port</td>
-								<td><?php echo $port ?></td>
-							</tr>
-							<tr id="tp02">
-								<td>Rozdzielczość</td>
-								<td><?php echo $rozdzielczosc ?></td>
-							</tr>
-							<tr id="tp01">
-								<td>Szczegóły adresu IP</td>
-								<td></td>
-							</tr>
-							<tr id="tp02">
-								<td>Adres IP</td>
-								<td><?php echo $adresIp ?></td>
-							</tr>
-							<tr id="tp02">
-								<td>Nazwa hosta</td>
-								<td><?php echo $nazwaHosta ?></td>
-							</tr>
-							<tr id="tp02">
-								<td>Organizacja</td>
-								<td><?php echo $organizacja ?></td>
-							</tr>
-							<tr id="tp02">
-								<td>Szerokość geograficzna</td>
-								<td><?php echo $szerokoscGeograficzna ?></td>
-							</tr>
-							<tr id="tp02">
-								<td>Długość geograficzna</td>
-								<td><?php echo $dlugoscGeograficzna ?></td>
-							</tr>
-							<tr id="tp02">
-								<td>Kraj</td>
-								<td><?php echo $kraj ?></td>
-							</tr>
-							<tr id="tp02">
-								<td>Region</td>
-								<td><?php echo $region ?></td>
-							</tr>
-							<tr id="tp02">
-								<td>Miasto</td>
-								<td><?php echo $miasto ?></td>
-							</tr>
-							<tr id="tp02">
-								<td>Kod pocztowy</td>
-								<td><?php echo $kodPocztowy ?></td>
-							</tr>
-							<tr id="tp01">
-								<td>Dokładna data</td>
-								<td><?php echo $eventPoint ?></td>
-							</tr>
-						</table>
-					</td>
+					<td>Imię: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['imie']; ?></font></td>
+				</tr>
+				<tr>
+					<td>Nazwisko: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['nazwisko']; ?></font></td>
+				</tr>
+				<tr>
+					<td>Płeć: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo getplec($userData['plec']); ?></font></td>
+				</tr>
+				<tr>
+					<td>Data&nbsp;urodzenia: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $birthDate; ?></font></td>
+				</tr>
+				<tr>
+					<td>Kraj: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['kraj']; ?></font></td>
+				</tr>
+				<tr>
+					<td>Województwo: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['wojewodztwo']; ?></font></td>
+				</tr>
+				<tr>
+					<td>Miasto: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['miasto']; ?></font></td>
+				</tr>
+				<tr>
+					<td>Ulica: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['ulica']; ?></font></td>
+				</tr>
+				<tr>
+					<td>Poczta: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['adres']['poczta']; ?></font></td>
+				</tr>
+				<tr>
+					<td>Telefon: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['telefon']; ?></font></td>
+				</tr>
+				<tr>
+					<td>Email: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $userData['mail']; ?></font></td>
+				</tr>
+				<tr>
+					<td>Hasło: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo "*****"; ?></font></td>
+				</tr>
+				<tr>
+					<td>Rejestracja: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $registration; ?></font></td>
+				</tr>
+				<tr>
+					<td>Uprawnienia: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $uprawnienia; ?></font></td>
+				</tr>
+				<tr>
+					<td>Status: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $status; ?></font></td>
+				</tr>
+				<tr>
+					<td>Dane&nbsp;klienta: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td></td>
+				</tr>
+				<tr id="tp01">
+					<td>System: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $system; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Przeglądarka: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $przegladarka; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Aplikacja&nbsp;kliencka: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $aplikacjaKliencka; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Port: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $port; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Rozdzielczość: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $rozdzielczosc; ?></font></td>
+				</tr>
+				<tr>
+					<td>Szczegóły&nbsp;adresu&nbsp;IP: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td></td>
+				</tr>
+				<tr id="tp01">
+					<td>Adres&nbsp;IP: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $adresIp; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Nazwa&nbsp;hosta: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $nazwaHosta; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Organizacja: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $organizacja; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Szerokość&nbsp;geograficzna: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $szerokoscGeograficzna; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Długość&nbsp;geograficzna: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $dlugoscGeograficzna; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Kraj: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $kraj; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Region: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $region; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Miasto: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $miasto; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Kod&nbsp;pocztowy: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $kodPocztowy; ?></font></td>
+				</tr>
+				<tr>
+					<td>Dane&nbsp;geolokalizacyjne: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td></td>
+				</tr>
+				<tr id="tp01">
+					<td>Szerokość&nbsp;geograficzna: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $szerokoscGeograficznaGeolokalizacja; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Długość&nbsp;geograficzna: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $dlugoscGeograficznaGeolokalizacja; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Wysokość: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $wysokosc; ?></font></td>
+				</tr>
+				<tr id="tp01">
+					<td>Nagłówek: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $naglowek; ?></font></td>
+				</tr>
+				<tr>
+					<td>Dokładna&nbsp;data: </td>
+					<td><?php echo "&nbsp;&nbsp;&nbsp;"; ?></td>
+					<td><font color="black"><?php echo $eventPoint; ?></font></td>
 				</tr>
 			</table>
-			</div>
 			<?php
+			if(isset($userStatistics['loginstatus']['geolocation_data'])) {
+				?>
+				<table class="map" style="width: 100%; height: 600px">
+					<tr>
+						<td><div id="google_map" class="map" style="width: 100%; height: 600px"></div></td>
+					</tr>
+				</table>
+				<?php
+			}
 		}
 		?>
 		
@@ -457,11 +572,15 @@ if($przekierowanie == true) {
 		<?php
 		if($przekierowanie != true) {
 			?>
-			<br /><br />
+			<br />
 			<center>
-				<a href="index.php?id=edytujprofil" class="submit-edit_button">Edytuj profil</a>
+				<a href="index.php?id=edytujprofil" class="btn btn-primary btn-lg">Edytuj profil &raquo;</a>
 			</center>
 			<?php
+		}
+		
+		if(isset($userStatistics['loginstatus']['geolocation_data'])) {
+			getGeolocationData($path, false, false, true, true, $szerokoscGeograficznaGeolokalizacja, $dlugoscGeograficznaGeolokalizacja);
 		}
 		?>
 	</div>

@@ -142,7 +142,6 @@ if(empty($errors)) {
 							<center>
 								<input type="submit" class="btn btn-primary btn-lg" value="Zmień hasło &raquo;" />
 							</center>
-							<br />
 						</td>
 					</tr>
 				</table>

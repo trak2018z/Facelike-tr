@@ -1,6 +1,6 @@
 <?php
 //Zapisanie nowego statusu i czasu ostatniej aktywności użytkownika do bazy danych
-changeloginstatus($path, $userSecurityDbName, getidfromsession(), 5, false);
+changeloginstatus($path, $userStatisticsDbName, getidfromsession(), 5, false);
 
 //Wyloguj
 session_destroy();

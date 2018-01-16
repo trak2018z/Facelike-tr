@@ -244,7 +244,7 @@ function changetype($path, $userSecurityDbName, $userId, $type)
 	return false;
 }
 
-function createloginstatus($status, $update = true, $path = null, $userSecurityDbName = null, $userId = null)
+function createloginstatus($status, $update = true, $path = null, $userStatisticsDbName = null, $userId = null)
 {
 	switch ($status) {
 		case 0:
@@ -271,17 +271,83 @@ function createloginstatus($status, $update = true, $path = null, $userSecurityD
 	}
 	
 	if($update) {
+		//Deklaracja danych
+		$szerokoscGeograficzna = null;
+		$dlugoscGeograficzna = null;
+		$wysokosc = null;
+		$naglowek = null;
+		
+		if(!isset($_POST['szerokoscGeograficzna']) || !isset($_POST['dlugoscGeograficzna']) || !isset($_POST['wysokosc']) || !isset($_POST['naglowek'])) {
+			$additionalData = array(
+				'path' => $path,
+				'userStatisticsDbName' => $userStatisticsDbName,
+				'userId' => $userId,
+				'status' => $status,
+				'update' => $update
+			);
+			
+			$result = getdocumentrev($path, $userStatisticsDbName, $userId);
+			$revision = $result[1];
+			if(($do = strpos($revision, '-')) !== false) {}
+			$documentRevOld = substr($revision, 0, $do);
+			
+			$dataStatus = getGeolocationData($path, true, false, false, false, 0.0, 0.0, false, $additionalData);
+			
+			$result = getdocumentrev($path, $userStatisticsDbName, $userId);
+			$revision = $result[1];
+			if(($do = strpos($revision, '-')) !== false) {}
+			$documentRevNew = substr($revision, 0, $do);
+			
+			if(($documentRevNew - $documentRevOld) == 0) {
+				return $dataStatus;
+			}
+		}
+		else {
+			$szerokoscGeograficzna = json_decode($_POST['szerokoscGeograficzna']);
+			$dlugoscGeograficzna = json_decode($_POST['dlugoscGeograficzna']);
+			$wysokosc = json_decode($_POST['wysokosc']);
+			$naglowek = json_decode($_POST['naglowek']);
+			
+			if((empty($szerokoscGeograficzna)) || ($szerokoscGeograficzna == null) || ($szerokoscGeograficzna == '')) {
+				$szerokoscGeograficzna = "Brak danych";
+			}
+			if((empty($dlugoscGeograficzna)) || ($dlugoscGeograficzna == null) || ($dlugoscGeograficzna == '')) {
+				$dlugoscGeograficzna = "Brak danych";
+			}
+			if((empty($wysokosc)) || ($wysokosc == null) || ($wysokosc == '')) {
+				$wysokosc = "Brak danych";
+			}
+			if((empty($naglowek)) || ($naglowek == null) || ($naglowek == '')) {
+				$naglowek = "Brak danych";
+			}
+		}
+		
+		$geolocationData = array(
+			'szerokosc_geograficzna' => (double)$szerokoscGeograficzna,
+			'dlugosc_geograficzna' => (double)$dlugoscGeograficzna,
+			'wysokosc' => $wysokosc,
+			'naglowek' => $naglowek
+		);
+		
 		$clientData = getClientData();
 		
 		$details = getIpDetails();
 		$ipDetails = checkIpDetails($details);
+		
+		$clientData2 = serialize($clientData);	//test
+		echo "clientData = ".$clientData2;	//test
+		$ipDetails2 = serialize($ipDetails);	//test
+		echo "ipDetails = ".$ipDetails2;	//test
+		$geolocationData2 = serialize($geolocationData);	//test
+		echo "geolocationData = ".$geolocationData2;	//test
 	}
 	else {
 		//Pobieranie danych statusu logowania
-		$loginStatus = getuserdata($path, $userSecurityDbName, $userId, 'loginstatus');
+		$loginStatus = getuserdata($path, $userStatisticsDbName, $userId, 'loginstatus');
 		
 		$clientData = $loginStatus['client_data'];
 		$ipDetails = $loginStatus['ip_details'];
+		$geolocationData = $loginStatus['geolocation_data'];
 	}
 	
 	$rok = date('Y');
@@ -299,6 +365,7 @@ function createloginstatus($status, $update = true, $path = null, $userSecurityD
 		'status' => $opis,
 		'client_data' => $clientData,
 		'ip_details' => $ipDetails,
+		'geolocation_data' => $geolocationData,
 		'date' => array(
 			'rok' => $rok,
 			'miesiac' => $miesiac,
@@ -315,20 +382,24 @@ function createloginstatus($status, $update = true, $path = null, $userSecurityD
 	return $loginStatus;
 }
 
-function changeloginstatus($path, $userSecurityDbName, $userId, $status, $update = true)
+function changeloginstatus($path, $userStatisticsDbName, $userId, $status, $update = true)
 {
 	if($update) {
-		$loginStatus = createloginstatus($status, $update);
+		$loginStatus = createloginstatus($status, $update, $path, $userStatisticsDbName, $userId);
+		
+		if($loginStatus == false) {
+			return $loginStatus;
+		}
 	}
 	else {
-		$loginStatus = createloginstatus($status, $update, $path, $userSecurityDbName, $userId);
+		$loginStatus = createloginstatus($status, $update, $path, $userStatisticsDbName, $userId);
 	}
 	
 	$document = array(
 		'loginstatus' => $loginStatus
 	);
 	
-	$response = updatedocument($path, $userSecurityDbName, $userId, $document);
+	$response = updatedocument($path, $userStatisticsDbName, $userId, $document);
 	
 	return $response;
 }
@@ -358,10 +429,15 @@ function checkbusy($path, $userSecurityDbName, $dataTyp, $data)
 			$documentId = $idList[$i];
 			
 			$response = getdocument($path, $userSecurityDbName, $documentId);
+			$array = json_decode($response, true);
 			
-			$result = string_to_array($response, true);
-			$array = $result[0];
-			$checkData = $array[$dataTyp];
+			$typ = gettype($dataTyp);
+			if($typ == "array") {
+				$checkData = $array[$dataTyp[0]][$dataTyp[1]];
+			}
+			else {
+				$checkData = $array[$dataTyp];
+			}
 			
 			if($checkData == $data) {
 				return true;
@@ -370,6 +446,20 @@ function checkbusy($path, $userSecurityDbName, $dataTyp, $data)
 	}
 	
 	return false;
+}
+
+function setplec($imie)
+{
+	$znak = $imie{strlen($imie)-1};
+	
+	if($znak == "a") {
+		$plec = "k";
+	}
+	else {
+		$plec = "m";
+	}
+	
+	return $plec;
 }
 
 function getplec($data)
@@ -387,6 +477,38 @@ function getplec($data)
 	}
 	
 	return $plec;
+}
+
+function getmiesiac($numerMiesiaca, $ileLiter = 3)
+{
+	$miesiace = array(
+		1 => "styczń",
+		2 => "luty",
+		3 => "marzec",
+		4 => "kwiecień",
+		5 => "maj",
+		6 => "czerwiec",
+		7 => "lipiec",
+		8 => "sierpień",
+		9 => "wrzesień",
+		10 => "październik",
+		11 => "listopad",
+		12 => "grudzień"
+	);
+	
+	$miesiac = "";
+	$numer = (int)$numerMiesiaca;
+	
+	if($numer == 10) {
+		if($ileLiter == 3) {
+			$miesiac = "paź";
+		}
+	}
+	else {
+		$miesiac = substr($miesiace[$numer], 0, $ileLiter);
+	}
+	
+	return $miesiac;
 }
 
 function auth($path, $userSecurityDbName, $login, $password)
@@ -449,6 +571,7 @@ function sauth($path, $userId, $userEmail, $userKey, $activationSuperKey)
 	return false;
 }
 
+/*
 function getreservedroomlist($path, $reservationDbName)
 {
 	$reservedIdList = getuseridlist($path, $reservationDbName);
@@ -498,6 +621,7 @@ function getreservedroomlist($path, $reservationDbName)
 	
 	return array($sortedReservedRoomIdList, $ileSal);
 }
+*/
 
 function randomString($length, $pattern = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZ0123456789')
 {
@@ -509,6 +633,30 @@ function randomString($length, $pattern = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJK
 	}
 	
 	return $randomString;
+}
+
+function encodeUrlData($data)
+{
+	//Kodowanie danych do przesyłu w adresie URL za pomocą metody GET
+	$daneDlugosc = strlen($data);
+	$szukane = array("!", "@", "#", "?", "&", " ");
+	$zastepcze   = array("XXX1XXX", "XXX2XXX", "XXX3XXX", "XXX4XXX", "XXX5XXX", "XXX6XXX");
+	
+	$encodeData = str_replace($szukane, $zastepcze, $data);
+	
+	return $encodeData;
+}
+
+function decodeUrlData($encodeData)
+{
+	//Dekodowanie danych po przesłaniu w adresie URL za pomocą metody GET
+	$daneDlugosc = strlen($encodeData);
+	$szukane   = array("XXX1XXX", "XXX2XXX", "XXX3XXX", "XXX4XXX", "XXX5XXX", "XXX6XXX");
+	$zastepcze = array("!", "@", "#", "?", "&", " ");
+	
+	$data = str_replace($szukane, $zastepcze, $encodeData);
+	
+	return $data;
 }
 
 function getClientData()
@@ -637,6 +785,232 @@ function checkIpDetails($details)
 	return $ipDetails;
 }
 
+function getGeolocationData($path, $saveData = false, $showData = false, $showMap = false, $simulate = false, $latitude = 0.0, $longitude = 0.0, $statement = false, $additionalData = null)
+{
+	//Ujednolicenie danych
+	$additionalData = serialize($additionalData);
+	
+	//Klucz Google Maps API
+	$apiKey = getspecialdata($path, 'facelike', 'google_maps', 'api_key');
+	
+	?>
+	<script async defer src="http://maps.google.com/maps/api/js?key=<?php echo $apiKey; ?>" type="text/javascript"></script>
+	
+	<script>
+	//<![CDATA[
+		var saveData = '<?php echo $saveData; ?>';
+		var showData = '<?php echo $showData; ?>';
+		var showMap = '<?php echo $showMap; ?>';
+		var simulate = '<?php echo $simulate; ?>';
+		
+		function initialiseMap()
+		{
+			var myOptions = {
+				zoom: 4,
+				mapTypeControl: true,
+				mapTypeControlOptions: {style: google.maps.MapTypeControlStyle.DROPDOWN_MENU},
+				navigationControl: true,
+				navigationControlOptions: {style: google.maps.NavigationControlStyle.SMALL},
+				mapTypeId: google.maps.MapTypeId.ROADMAP
+			}
+			if(showMap == true)
+			{
+				map = new google.maps.Map(document.getElementById("google_map"), myOptions);
+			}
+		}
+		
+		function initialise()
+		{
+			if(simulate == true)
+			{
+				var latitude = '<?php echo $latitude; ?>';
+				var longitude = '<?php echo $longitude; ?>';
+				var statement = '<?php echo $statement; ?>';
+				latitude = parseFloat(latitude);
+				longitude = parseFloat(longitude);
+				
+				var locations = new Array({ coords: {
+						latitude: latitude,
+						longitude: longitude
+					} 
+				});
+				
+				if(statement == true)
+				{
+					alert(JSON.stringify(locations, null, 4));
+				}
+				
+				geoPositionSimulator.init(locations);
+			}
+			
+			if(showData == true)
+			{
+				if(geoPosition.init())
+				{
+					document.getElementById('latitude').innerHTML = "Odbieranie danych ...";
+					document.getElementById('longitude').innerHTML = "Odbieranie danych ...";
+					document.getElementById('altitude').innerHTML = "Odbieranie danych ...";
+					document.getElementById('heading').innerHTML = "Odbieranie danych ...";
+					geoPosition.getCurrentPosition(showPosition, function() {
+							document.getElementById('latitude').innerHTML = "Nie można uzyskać lokalizacji";
+							document.getElementById('longitude').innerHTML = "Nie można uzyskać lokalizacji";
+							document.getElementById('altitude').innerHTML = "Nie można uzyskać lokalizacji";
+							document.getElementById('heading').innerHTML = "Nie można uzyskać lokalizacji";
+						},
+						{
+							enableHighAccuracy:true
+					});
+				}
+				else
+				{
+					document.getElementById('latitude').innerHTML = "Funkcjonalność niedostępna";
+					document.getElementById('longitude').innerHTML = "Funkcjonalność niedostępna";
+					document.getElementById('altitude').innerHTML = "Funkcjonalność niedostępna";
+					document.getElementById('heading').innerHTML = "Funkcjonalność niedostępna";
+				}
+			}
+			else
+			{
+				if(geoPosition.init())
+				{
+					geoPosition.getCurrentPosition(showPosition, function() {}, {enableHighAccuracy:true});
+				}
+			}
+		}
+		
+		function showPosition(p)
+		{
+			var latitude = parseFloat( p.coords.latitude );
+			var longitude = parseFloat( p.coords.longitude );
+			var altitude = parseFloat( p.coords.altitude );
+			var heading = parseFloat( p.coords.heading );
+			
+			if(showData == true)
+			{
+				document.getElementById('latitude').innerHTML = 'Szerokość geograficzna: ' + latitude;
+				document.getElementById('longitude').innerHTML = 'Długość geograficzna: ' + longitude;
+				if(isNaN(altitude) || altitude == '' || altitude == null || altitude == undefined)
+				{
+					document.getElementById('altitude').innerHTML = 'Wysokość: Brak danych';
+				}
+				else
+				{
+					document.getElementById('altitude').innerHTML = 'Wysokość: ' + altitude;
+				}
+				if(isNaN(heading) || heading == '' || heading == null || heading == undefined)
+				{
+					document.getElementById('heading').innerHTML = 'Nagłówek: Brak danych';
+				}
+				else
+				{
+					document.getElementById('heading').innerHTML = 'Nagłówek: ' + heading;
+				}
+			}
+			
+			if(showMap == true)
+			{
+				var pos = new google.maps.LatLng( latitude , longitude);
+				map.setCenter(pos);
+				map.setZoom(14);
+				
+				var infowindow = new google.maps.InfoWindow({
+					content: "<strong>yes</strong>"
+				});
+				
+				var marker = new google.maps.Marker({
+					position: pos,
+					map: map,
+					title: "Jesteś tutaj"
+				});
+				
+				google.maps.event.addListener(marker, 'click', function() {
+				  infowindow.open(map,marker);
+				});
+			}
+			
+			if(saveData == true)
+			{
+				getValue(latitude, longitude, altitude, heading);
+			}
+		}
+		
+		function checkSum(successMsg, errorMsg, completeMsg) {
+			if(successMsg != null) {
+				alert("Success: " + JSON.stringify(successMsg, null, 4));
+			}
+			if(errorMsg != null) {
+				alert("Error: " + JSON.stringify(errorMsg, null, 4));
+			}
+			if(completeMsg != null) {
+				alert("Complete: " + JSON.stringify(completeMsg, null, 4));
+			}
+		}
+		
+		function getValue(latitude, longitude, altitude, heading) {
+			var statement = '<?php echo $statement; ?>';
+			var additionalData = '<?php echo $additionalData; ?>';
+			var successMsg = null;
+			var errorMsg = null;
+			var completeMsg = null;
+			
+			jQuery(document).ready(function() {
+				$.ajax({
+					type: "POST",
+					//method: "POST",
+					url: "account/geolocationdata.php",
+					data: {
+						szerokoscGeograficzna: JSON.stringify(latitude),
+						dlugoscGeograficzna: JSON.stringify(longitude),
+						wysokosc: JSON.stringify(altitude),
+						naglowek: JSON.stringify(heading),
+						<?php
+						if($additionalData != null) {
+							echo 'additionalData: JSON.stringify(additionalData),';
+						}
+						else {
+							echo 'additionalData: JSON.stringify(null),';
+						}
+						?>
+					},
+					dataType: "HTML",	//"HTML"	//"JSON"
+					//contentType: "application/json",	//"application/json"
+					cache: false,
+					beforeSend: function() {
+						$(".ajaxLoading").show();
+					},
+					success: function(data, msg) {
+						//Ten fragment wykona się po POMYŚLNYM zakończeniu połączenia
+						$(".ajaxLoading").hide();
+						//$('#answer').val(data);
+						successMsg = msg;
+					},
+					complete: function(r) {
+						//Ten fragment wykona się po ZAKONCZENIU połączenia
+						completeMsg = r;
+						if(statement == true)
+						{
+							checkSum(successMsg, errorMsg, completeMsg);
+						}
+					},
+					error: function(data, error) {
+						//Ten fragment wykona się w przypadku BŁĘDU
+						$(".ajaxLoading").hide();
+						console.log(error);
+						errorMsg = error;
+					}
+				});
+			});
+		}
+	 //]]>
+	</script>
+	<?php
+	
+	//Komunikat końcowy
+	if($saveData == true) {
+		return false;
+	}
+}
+
 function getBrowser($userAgent)
 {
 	if(preg_match('/MSIE/i', $userAgent) && !preg_match('/Opera/i',$userAgent)) {
@@ -714,7 +1088,7 @@ function getScreenResolution()
 
 function setOneCookie($name, $value, $expiryDate = 1, $expiryTime = 0)
 {
-	if($expiryDate == 0 || $expiryTime == 0) {
+	if($expiryDate == 0 && $expiryTime == 0) {
 		$expiryDate = 1;
 	}
 	
